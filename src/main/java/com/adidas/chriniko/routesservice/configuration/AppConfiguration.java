@@ -2,10 +2,12 @@ package com.adidas.chriniko.routesservice.configuration;
 
 import com.adidas.chriniko.routesservice.entity.RouteEntity;
 import com.adidas.chriniko.routesservice.repository.RouteRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.TransactionCallbackWithoutResult;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -53,6 +55,21 @@ public class AppConfiguration {
                 }
             });
 
+
+        };
+    }
+
+    @Autowired
+    private RedisTemplate<String, String> redisTemplate;
+
+    @Bean
+    @Order(1)
+    CommandLineRunner populateRedis() {
+        return args -> {
+
+            for (int i = 1; i<1000; i++) {
+                redisTemplate.opsForHash().put("key"+i, "value"+i, "value"+i);
+            }
 
         };
     }

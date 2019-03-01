@@ -9,5 +9,4 @@ public class RoutesServiceApplication {
     public static void main(String[] args) {
         SpringApplication.run(RoutesServiceApplication.class, args);
     }
-
 }

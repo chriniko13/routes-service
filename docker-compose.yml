@@ -23,12 +23,21 @@ services:
     volumes:
       - my-db:/var/lib/mysql
 
+#  redis:
+#    container_name: redis
+#    hostname: redis
+#    image: redis
+#    volumes:
+#      - redis-data:/data
+
+
   redis:
-    container_name: redis
-    hostname: redis
     image: redis
+    command: redis-server /usr/local/etc/redis/redis.conf
     volumes:
-      - redis-data:/data
+      - ./redis.conf:/usr/local/etc/redis/redis.conf
+    ports:
+      - "6379:6379"
 
   redis-commander:
     container_name: redis-commander
