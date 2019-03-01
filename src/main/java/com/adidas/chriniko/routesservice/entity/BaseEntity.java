@@ -31,8 +31,6 @@ public abstract class BaseEntity implements Serializable {
     // Note: soft deletion.
     protected Boolean deleted = Boolean.FALSE;
 
-
-    // -----------------------------------------------------------------------------------------------------------------
     public static String who() {
         return ManagementFactory.getRuntimeMXBean().getName();
     }

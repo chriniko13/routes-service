@@ -24,23 +24,37 @@ public class RouteService {
 
     private final RouteRepository routeRepository;
     private final TransactionTemplate transactionTemplate;
+    private final CacheService cacheService;
 
     @Autowired
-    public RouteService(RouteRepository routeRepository, TransactionTemplate transactionTemplate) {
+    public RouteService(RouteRepository routeRepository,
+                        TransactionTemplate transactionTemplate,
+                        CacheService cacheService) {
         this.routeRepository = routeRepository;
         this.transactionTemplate = transactionTemplate;
+        this.cacheService = cacheService;
     }
 
     public Mono<RouteInfo> find(CityInfo cityInfo) {
-
         return Mono
                 .<Optional<RouteEntity>>create(sink -> {
                     try {
                         log.debug("will search for entry with provided city info: {}", cityInfo);
 
-                        Optional<RouteEntity> result
-                                = routeRepository.find(cityInfo.getName(), cityInfo.getCountry());
-                        sink.success(result);
+                        Optional<RouteInfo> cachedResult = cacheService.get(cityInfo);
+                        if (cachedResult.isPresent()) {
+
+
+
+                        } else {
+
+                            //TODO add metrics here...
+                            log.debug("cache miss");
+
+                            Optional<RouteEntity> result
+                                    = routeRepository.find(cityInfo.getName(), cityInfo.getCountry());
+                            sink.success(result);
+                        }
 
                     } catch (Exception e) {
                         log.error("error occurred during find city info operation", e);
@@ -50,23 +64,19 @@ public class RouteService {
                 .subscribeOn(Schedulers.parallel())
                 .publishOn(Schedulers.elastic())
                 .map(routeEntity -> {
-
                     log.debug("will transform fetched entry: {}", routeEntity);
-
                     return routeEntity
-                            .map(_routeEntity -> {
-
-                                CityInfo originCityInfo = new CityInfo(_routeEntity.getOriginCityName(), _routeEntity.getOriginCountry());
-                                CityInfo destinyCityInfo = new CityInfo(_routeEntity.getDestinyCityName(), _routeEntity.getDestinyCountry());
+                            .map(entity -> {
+                                CityInfo originCityInfo = new CityInfo(entity.getOriginCityName(), entity.getOriginCountry());
+                                CityInfo destinyCityInfo = new CityInfo(entity.getDestinyCityName(), entity.getDestinyCountry());
 
                                 return new RouteInfo(
-                                        _routeEntity.getId(),
+                                        entity.getId(),
                                         originCityInfo,
                                         destinyCityInfo,
-                                        _routeEntity.getDepartureTime(),
-                                        _routeEntity.getArrivalTime()
+                                        entity.getDepartureTime(),
+                                        entity.getArrivalTime()
                                 );
-
                             })
                             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "no record exists with: " + cityInfo));
                 });
@@ -190,6 +200,5 @@ public class RouteService {
 
         routeInfo.setId(routeEntity.getId());
     }
-
 
 }

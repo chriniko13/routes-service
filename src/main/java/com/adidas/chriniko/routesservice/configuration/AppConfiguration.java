@@ -1,8 +1,9 @@
 package com.adidas.chriniko.routesservice.configuration;
 
+import com.adidas.chriniko.routesservice.dto.CityInfo;
+import com.adidas.chriniko.routesservice.dto.RouteInfo;
 import com.adidas.chriniko.routesservice.entity.RouteEntity;
 import com.adidas.chriniko.routesservice.repository.RouteRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -25,7 +26,6 @@ public class AppConfiguration {
     public CommandLineRunner populateDb(RouteRepository routeRepository,
                                         TransactionTemplate transactionTemplate) {
         return args -> {
-
             transactionTemplate.execute(new TransactionCallbackWithoutResult() {
                 @Override
                 protected void doInTransactionWithoutResult(TransactionStatus transactionStatus) {
@@ -54,23 +54,34 @@ public class AppConfiguration {
                     }
                 }
             });
-
-
         };
     }
 
-    @Autowired
-    private RedisTemplate<String, String> redisTemplate;
-
     @Bean
     @Order(1)
-    CommandLineRunner populateRedis() {
+    CommandLineRunner populateRedis(
+            RedisTemplate<String, String> redisTemplate,
+            RedisTemplate<CityInfo, RouteInfo> redisTemplate2) {
         return args -> {
 
-            for (int i = 1; i<1000; i++) {
-                redisTemplate.opsForHash().put("key"+i, "value"+i, "value"+i);
-            }
+            for (int i = 1; i < 5; i++) {
+                redisTemplate.opsForValue().set("key" + i, "value" + i);
 
+                CityInfo cityInfo = new CityInfo(
+                        "name"+i,
+                        "country"+i
+                );
+                Instant now = Instant.now();
+                RouteInfo routeInfo = new RouteInfo(
+                        "id"+i,
+                        cityInfo,
+                        cityInfo,
+                        now,
+                        now
+                );
+
+                redisTemplate2.opsForValue().set(cityInfo, routeInfo);
+            }
         };
     }
 
