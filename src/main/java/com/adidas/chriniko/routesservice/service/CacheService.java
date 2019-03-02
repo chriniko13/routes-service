@@ -2,6 +2,7 @@ package com.adidas.chriniko.routesservice.service;
 
 import com.adidas.chriniko.routesservice.dto.CityInfo;
 import com.adidas.chriniko.routesservice.dto.RouteInfo;
+import com.codahale.metrics.Meter;
 import lombok.extern.log4j.Log4j2;
 import org.javatuples.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,27 +11,46 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
-import java.util.Optional;
-import java.util.function.Consumer;
-
 @Log4j2
 
 @Service
 public class CacheService {
 
     private final RedisTemplate<CityInfo, RouteInfo> redisTemplate;
+    private final Meter cacheHitFindByCityInfo;
+    private final Meter cacheMissFindByCityInfo;
 
     @Autowired
-    public CacheService(RedisTemplate<CityInfo, RouteInfo> redisTemplate) {
+    public CacheService(RedisTemplate<CityInfo, RouteInfo> redisTemplate,
+                        Meter cacheHitFindByCityInfo,
+                        Meter cacheMissFindByCityInfo) {
         this.redisTemplate = redisTemplate;
+        this.cacheHitFindByCityInfo = cacheHitFindByCityInfo;
+        this.cacheMissFindByCityInfo = cacheMissFindByCityInfo;
     }
 
-    public Optional<RouteInfo> get(CityInfo cityInfo) {
-        return Optional.ofNullable(redisTemplate.opsForValue().get(cityInfo));
+    public Mono<RouteInfo> get(CityInfo cityInfo) {
+        return Mono.create(sink -> {
+            try {
+                RouteInfo result = redisTemplate.opsForValue().get(cityInfo);
+
+                if (result != null) {
+                    log.debug("cache hit, result: {}", result);
+                    cacheHitFindByCityInfo.mark();
+                } else {
+                    log.debug("cache miss, cityInfo: {}", cityInfo);
+                    cacheMissFindByCityInfo.mark();
+                }
+
+                sink.success(result);
+            } catch (Exception e) {
+                log.error("cache get operation failed", e);
+                sink.error(e);
+            }
+        });
     }
 
-    public void upsert(CityInfo input, RouteInfo output) {
-
+    void upsert(CityInfo input, RouteInfo output) {
         Mono
                 .<Pair<CityInfo, RouteInfo>>create(sink -> {
                     try {
@@ -43,18 +63,8 @@ public class CacheService {
                 })
                 .subscribeOn(Schedulers.parallel())
                 .subscribe(
-                        new Consumer<Pair<CityInfo, RouteInfo>>() {
-                            @Override
-                            public void accept(Pair<CityInfo, RouteInfo> o) {
-
-                            }
-                        },
-                        throwable -> {
-
-                        },
-                        () -> {
-
-                        }
+                        result -> log.debug("stored successfully in cache, result: {}", result),
+                        throwable -> log.warn("could not store result to cache", throwable)
                 );
 
     }

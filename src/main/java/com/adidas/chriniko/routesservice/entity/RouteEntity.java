@@ -37,7 +37,6 @@ import java.time.Instant;
 )
 public class RouteEntity extends BaseEntity {
 
-    //TODO add composite index...
     private String originCityName;
     private String originCountry;
 

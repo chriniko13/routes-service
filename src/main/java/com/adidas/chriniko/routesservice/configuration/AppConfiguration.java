@@ -1,14 +1,11 @@
 package com.adidas.chriniko.routesservice.configuration;
 
-import com.adidas.chriniko.routesservice.dto.CityInfo;
-import com.adidas.chriniko.routesservice.dto.RouteInfo;
 import com.adidas.chriniko.routesservice.entity.RouteEntity;
 import com.adidas.chriniko.routesservice.repository.RouteRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.TransactionCallbackWithoutResult;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -32,7 +29,6 @@ public class AppConfiguration {
 
                     routeRepository.deleteAll();
 
-                    //TODO populate with real data...
                     for (int i = 1; i <= 100; i++) {
                         RouteEntity routeEntity = new RouteEntity();
 
@@ -54,34 +50,6 @@ public class AppConfiguration {
                     }
                 }
             });
-        };
-    }
-
-    @Bean
-    @Order(1)
-    CommandLineRunner populateRedis(
-            RedisTemplate<String, String> redisTemplate,
-            RedisTemplate<CityInfo, RouteInfo> redisTemplate2) {
-        return args -> {
-
-            for (int i = 1; i < 5; i++) {
-                redisTemplate.opsForValue().set("key" + i, "value" + i);
-
-                CityInfo cityInfo = new CityInfo(
-                        "name"+i,
-                        "country"+i
-                );
-                Instant now = Instant.now();
-                RouteInfo routeInfo = new RouteInfo(
-                        "id"+i,
-                        cityInfo,
-                        cityInfo,
-                        now,
-                        now
-                );
-
-                redisTemplate2.opsForValue().set(cityInfo, routeInfo);
-            }
         };
     }
 

@@ -2,7 +2,8 @@ version: '3.3'
 
 services:
 
-  db:
+  mysql:
+    container_name: mysql
     image: mysql:5.7
     restart: always
     environment:
@@ -22,22 +23,19 @@ services:
       # Where our data will be persisted
     volumes:
       - my-db:/var/lib/mysql
-
-#  redis:
-#    container_name: redis
-#    hostname: redis
-#    image: redis
-#    volumes:
-#      - redis-data:/data
-
+    networks:
+      - gateway
 
   redis:
+    container_name: redis
     image: redis
     command: redis-server /usr/local/etc/redis/redis.conf
     volumes:
       - ./redis.conf:/usr/local/etc/redis/redis.conf
     ports:
       - "6379:6379"
+    networks:
+      - gateway
 
   redis-commander:
     container_name: redis-commander
@@ -48,8 +46,14 @@ services:
       - REDIS_HOSTS=local:redis:6379
     ports:
       - "8081:8081"
+    networks:
+      - gateway
 
 # Names our volume
 volumes:
   my-db:
   redis-data:
+
+
+networks:
+  gateway: {}

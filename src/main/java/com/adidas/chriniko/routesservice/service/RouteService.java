@@ -36,47 +36,33 @@ public class RouteService {
     }
 
     public Mono<RouteInfo> find(CityInfo cityInfo) {
+        return cacheService
+                .get(cityInfo)
+                .switchIfEmpty(_find(cityInfo))
+                .subscribeOn(Schedulers.parallel());
+    }
+
+    private Mono<RouteInfo> _find(CityInfo cityInfo) {
         return Mono
                 .<Optional<RouteEntity>>create(sink -> {
                     try {
-                        log.debug("will search for entry with provided city info: {}", cityInfo);
-
-                        Optional<RouteInfo> cachedResult = cacheService.get(cityInfo);
-                        if (cachedResult.isPresent()) {
-
-
-
-                        } else {
-
-                            //TODO add metrics here...
-                            log.debug("cache miss");
-
-                            Optional<RouteEntity> result
-                                    = routeRepository.find(cityInfo.getName(), cityInfo.getCountry());
-                            sink.success(result);
-                        }
+                        Optional<RouteEntity> result
+                                = routeRepository.find(cityInfo.getName(), cityInfo.getCountry());
+                        sink.success(result);
 
                     } catch (Exception e) {
                         log.error("error occurred during find city info operation", e);
                         sink.error(e);
                     }
                 })
-                .subscribeOn(Schedulers.parallel())
                 .publishOn(Schedulers.elastic())
                 .map(routeEntity -> {
                     log.debug("will transform fetched entry: {}", routeEntity);
                     return routeEntity
                             .map(entity -> {
-                                CityInfo originCityInfo = new CityInfo(entity.getOriginCityName(), entity.getOriginCountry());
-                                CityInfo destinyCityInfo = new CityInfo(entity.getDestinyCityName(), entity.getDestinyCountry());
-
-                                return new RouteInfo(
-                                        entity.getId(),
-                                        originCityInfo,
-                                        destinyCityInfo,
-                                        entity.getDepartureTime(),
-                                        entity.getArrivalTime()
-                                );
+                                RouteInfo routeInfo = map(entity);
+                                cacheService.upsert(cityInfo, routeInfo);
+                                return routeInfo;
                             })
                             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "no record exists with: " + cityInfo));
                 });
@@ -93,7 +79,6 @@ public class RouteService {
                                 routeInfo.getCity().getName(), routeInfo.getCity().getCountry(),
                                 routeInfo.getDestinyCity().getName(), routeInfo.getDestinyCity().getCountry()
                         );
-
                         sink.success(result);
 
                     } catch (Exception e) {
@@ -125,10 +110,8 @@ public class RouteService {
     }
 
     public Mono<RouteInfo> update(String routeId, RouteInfo routeInfo) {
-
         return searchById(routeId)
                 .map(result -> {
-
                     if (!result.isPresent()) {
                         throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "no record exists with id: " + routeId);
                     } else {
@@ -199,6 +182,19 @@ public class RouteService {
         routeEntity.setArrivalTime(routeInfo.getArrivalTime());
 
         routeInfo.setId(routeEntity.getId());
+    }
+
+    private RouteInfo map(RouteEntity entity) {
+        CityInfo originCityInfo = new CityInfo(entity.getOriginCityName(), entity.getOriginCountry());
+        CityInfo destinyCityInfo = new CityInfo(entity.getDestinyCityName(), entity.getDestinyCountry());
+
+        return new RouteInfo(
+                entity.getId(),
+                originCityInfo,
+                destinyCityInfo,
+                entity.getDepartureTime(),
+                entity.getArrivalTime()
+        );
     }
 
 }
