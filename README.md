@@ -29,11 +29,23 @@ TODO
 
 * Two options:
     * Execute: 
-        * `mvn clean package`
-        * `java -jar target/sdk-backend-test-1.0.0-SNAPSHOT.jar -DLog4jContextSelector=org.apache.logging.log4j.core.async.AsyncLoggerContextSelector`
+        * `mvn clean install -DskipTests=true`
+        * `java -jar -Dspring.profiles.active=dev -DLog4jContextSelector=org.apache.logging.log4j.core.async.AsyncLoggerContextSelector target/routes-service-1.0.0-SNAPSHOT.jar`
                 
     * Execute:
-        * `mvn spring-boot:run -DLog4jContextSelector=org.apache.logging.log4j.core.async.AsyncLoggerContextSelector`
+        * `mvn spring-boot:run -Dspring.profiles.active=dev -DLog4jContextSelector=org.apache.logging.log4j.core.async.AsyncLoggerContextSelector`
+
+* (Optional) When you finish: `docker-compose down`
+
+
+#### How to run service (dockerized)
+* Uncomment the section in `docker-compose.yml` file for service: `routes-service:`
+
+* Execute: `mvn clean install -DskipTests=true`
+
+* Execute: `docker-compose build`
+
+* Execute: `docker-compose up`
 
 * (Optional) When you finish: `docker-compose down`
 
@@ -48,7 +60,4 @@ TODO
 
 #### Useful Docker Commands
 
-* In order to connect to sonarqube postgresql
-
-    * Execute: `docker ps` and find the id of your running container
-    * Then in order to find the host of postgre running container execute: `docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' <container_id>`
+* `docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' <container_id>`
