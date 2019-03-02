@@ -61,9 +61,18 @@ public class RouteResource {
             produces = MediaType.APPLICATION_JSON_UTF8_VALUE
     )
     public @ResponseBody
-    Mono<RouteInfo> get(@PathVariable("id") String id) {
-        log.debug("  >> get: {}", id);
+    Mono<RouteInfo> find(@PathVariable("id") String id) {
+        log.debug("  >> find: {}", id);
         return routeService.find(id);
+    }
+
+    @DeleteMapping(
+            path = "/{id}",
+            produces = MediaType.APPLICATION_JSON_UTF8_VALUE
+    )
+    public @ResponseBody Mono<RouteInfo> delete(@PathVariable("id") String id) {
+        log.debug("  >> delete: {}", id);
+        return routeService.delete(id);
     }
 
 }

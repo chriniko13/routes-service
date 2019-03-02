@@ -49,6 +49,10 @@ public class RouteRepository {
         em.persist(routeEntity);
     }
 
+    public void delete(RouteEntity routeEntity) {
+        em.remove(em.merge(routeEntity));
+    }
+
     public RouteEntity update(RouteEntity routeEntity) {
         return em.merge(routeEntity);
     }
@@ -60,5 +64,4 @@ public class RouteRepository {
             return Optional.empty();
         }
     }
-
 }

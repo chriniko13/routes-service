@@ -134,6 +134,19 @@ public class RouteService {
     }
 
     public Mono<RouteInfo> find(String routeId) {
+        //TODO add cache support....
+        return searchById(routeId)
+                .map(result -> {
+                    if (!result.isPresent()) {
+                        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "no record exists with id: " + routeId);
+                    } else {
+                        return map(result.get());
+                    }
+                });
+
+    }
+
+    public Mono<RouteInfo> delete(String routeId) {
         return searchById(routeId)
                 .map(result -> {
                     if (!result.isPresent()) {
@@ -141,16 +154,19 @@ public class RouteService {
                     } else {
                         RouteEntity routeEntity = result.get();
 
-                        return new RouteInfo(
-                                routeEntity.getId(),
-                                new CityInfo(routeEntity.getOriginCityName(), routeEntity.getOriginCountry()),
-                                new CityInfo(routeEntity.getDestinyCityName(), routeEntity.getDestinyCountry()),
-                                routeEntity.getDepartureTime(),
-                                routeEntity.getArrivalTime()
-                        );
+                        transactionTemplate.execute(new TransactionCallbackWithoutResult() {
+                            @Override
+                            protected void doInTransactionWithoutResult(TransactionStatus transactionStatus) {
+                                routeRepository.delete(routeEntity);
+                            }
+                        });
+
+                        CityInfo cityInfo = new CityInfo(routeEntity.getOriginCityName(), routeEntity.getOriginCountry());
+                        cacheService.remove(cityInfo);
+
+                        return map(result.get());
                     }
                 });
-
     }
 
     private Mono<Optional<RouteEntity>> searchById(String routeId) {
@@ -196,5 +212,4 @@ public class RouteService {
                 entity.getArrivalTime()
         );
     }
-
 }

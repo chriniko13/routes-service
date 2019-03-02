@@ -39,6 +39,16 @@ public class MetricsConfiguration {
         return metricRegistry.meter(MetricRegistry.name(CacheService.class, "cache-miss-find-by-city-info"));
     }
 
+    @Bean
+    public Meter cacheHitFindByRouteId(MetricRegistry metricRegistry) {
+        return metricRegistry.meter(MetricRegistry.name(CacheService.class, "cache-hit-find-by-route-id"));
+    }
+
+    @Bean
+    public Meter cacheMissFindByRouteId(MetricRegistry metricRegistry) {
+        return metricRegistry.meter(MetricRegistry.name(CacheService.class, "cache-miss-find-by-route-id"));
+    }
+
     @Bean(destroyMethod = "stop")
     public JmxReporter graphiteReporter(MetricRegistry metricRegistry) {
 
