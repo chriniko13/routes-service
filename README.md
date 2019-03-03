@@ -61,6 +61,10 @@
     * In order to see integration test coverage open with browser: `target/site/jacoco-it/index.html`
 
 
+#### Redis Commander (you should run docker-compose up first)
+*See redis contents from here: `http://localhost:8081`
+
+
 #### Useful Docker Commands
 
 * `docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' <container_id>`

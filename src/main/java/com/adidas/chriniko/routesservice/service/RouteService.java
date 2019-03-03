@@ -5,6 +5,7 @@ import com.adidas.chriniko.routesservice.dto.RouteInfo;
 import com.adidas.chriniko.routesservice.entity.RouteEntity;
 import com.adidas.chriniko.routesservice.repository.RouteRepository;
 import lombok.extern.log4j.Log4j2;
+import org.javatuples.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -16,8 +17,8 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
 import java.util.Optional;
+import java.util.function.BiConsumer;
 
-//TODO check transactionality....
 
 @Log4j2
 
@@ -52,7 +53,7 @@ public class RouteService {
 
                         RouteEntity routeEntity = new RouteEntity();
 
-                        updateState(routeInfo, routeEntity);
+                        mutateState().accept(routeInfo, routeEntity);
 
                         transactionTemplate.execute(new TransactionCallbackWithoutResult() {
                             @Override
@@ -80,10 +81,13 @@ public class RouteService {
 
                         RouteEntity routeEntity = result.get();
 
-                        cacheService.remove(routeId);
-                        cacheService.remove(extractOrigin(routeEntity));
+                        cacheService
+                                .remove(routeId)
+                                .then(cacheService.remove(extractOrigin(routeEntity)))
+                                .subscribeOn(Schedulers.parallel())
+                                .subscribe();
 
-                        updateState(routeInfo, routeEntity);
+                        mutateState().accept(routeInfo, routeEntity);
 
                         transactionTemplate.execute(new TransactionCallbackWithoutResult() {
                             @Override
@@ -92,8 +96,11 @@ public class RouteService {
                             }
                         });
 
-                        cacheService.upsert(routeId, routeInfo);
-                        cacheService.upsert(extractOrigin(routeEntity), routeInfo);
+                        cacheService
+                                .upsert(routeId, routeInfo)
+                                .then(cacheService.upsert(extractOrigin(routeEntity), routeInfo))
+                                .subscribeOn(Schedulers.parallel())
+                                .subscribe();
 
                         return routeInfo;
                     }
@@ -106,15 +113,16 @@ public class RouteService {
                 .subscribeOn(Schedulers.parallel())
                 .switchIfEmpty(
                         searchById(routeId)
+                                .publishOn(Schedulers.elastic())
                                 .map(result -> {
                                     if (!result.isPresent()) {
                                         throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "no record exists with id: " + routeId);
                                     } else {
-                                        RouteInfo routeInfo = map(result.get());
-                                        cacheService.upsert(routeId, routeInfo);
-                                        return routeInfo;
+                                        return map(result.get());
                                     }
                                 })
+                                .publishOn(Schedulers.parallel())
+                                .flatMap(routeInfo -> cacheService.upsert(routeId, routeInfo).map(Pair::getValue1))
                 );
     }
 
@@ -135,8 +143,10 @@ public class RouteService {
 
                         CityInfo cityInfo = extractOrigin(routeEntity);
 
-                        cacheService.remove(cityInfo);
-                        cacheService.remove(routeEntity.getId());
+                        cacheService
+                                .remove(cityInfo)
+                                .then(cacheService.remove(routeEntity.getId()))
+                                .subscribeOn(Schedulers.parallel()).subscribe();
 
                         return map(result.get());
                     }
@@ -145,10 +155,12 @@ public class RouteService {
 
     private Mono<RouteInfo> _find(CityInfo cityInfo) {
         return Mono
-                .<Optional<RouteEntity>>create(sink -> {
+                .<RouteEntity>create(sink -> {
                     try {
-                        Optional<RouteEntity> result
-                                = routeRepository.find(cityInfo.getName(), cityInfo.getCountry());
+                        RouteEntity result = routeRepository
+                                .find(cityInfo.getName(), cityInfo.getCountry())
+                                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "no record exists with: " + cityInfo));
+
                         sink.success(result);
 
                     } catch (Exception e) {
@@ -157,16 +169,10 @@ public class RouteService {
                     }
                 })
                 .subscribeOn(Schedulers.parallel())
-                .map(routeEntity -> {
-                    log.debug("will transform fetched entry: {}", routeEntity);
-                    return routeEntity
-                            .map(entity -> {
-                                RouteInfo routeInfo = map(entity);
-                                cacheService.upsert(cityInfo, routeInfo);
-                                return routeInfo;
-                            })
-                            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "no record exists with: " + cityInfo));
-                });
+                .publishOn(Schedulers.elastic())
+                .map(routeEntity -> Pair.with(routeEntity, map(routeEntity)))
+                .publishOn(Schedulers.parallel())
+                .flatMap(info -> cacheService.upsert(cityInfo, info.getValue1()).map(Pair::getValue1));
     }
 
     private Mono<Optional<RouteEntity>> searchById(String routeId) {
@@ -187,17 +193,19 @@ public class RouteService {
                 .subscribeOn(Schedulers.parallel());
     }
 
-    private void updateState(RouteInfo routeInfo, RouteEntity routeEntity) {
-        routeEntity.setOriginCityName(routeInfo.getCity().getName());
-        routeEntity.setOriginCountry(routeInfo.getCity().getCountry());
+    private BiConsumer<RouteInfo, RouteEntity> mutateState() {
+        return (routeInfo, routeEntity) -> {
+            routeEntity.setOriginCityName(routeInfo.getCity().getName());
+            routeEntity.setOriginCountry(routeInfo.getCity().getCountry());
 
-        routeEntity.setDestinyCityName(routeInfo.getDestinyCity().getName());
-        routeEntity.setDestinyCountry(routeInfo.getDestinyCity().getCountry());
+            routeEntity.setDestinyCityName(routeInfo.getDestinyCity().getName());
+            routeEntity.setDestinyCountry(routeInfo.getDestinyCity().getCountry());
 
-        routeEntity.setDepartureTime(routeInfo.getDepartureTime());
-        routeEntity.setArrivalTime(routeInfo.getArrivalTime());
+            routeEntity.setDepartureTime(routeInfo.getDepartureTime());
+            routeEntity.setArrivalTime(routeInfo.getArrivalTime());
 
-        routeInfo.setId(routeEntity.getId());
+            routeInfo.setId(routeEntity.getId());
+        };
     }
 
     private RouteInfo map(RouteEntity entity) {

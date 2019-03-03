@@ -11,7 +11,6 @@ import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
 
 import java.time.Duration;
 import java.util.Set;
@@ -56,7 +55,7 @@ public class CacheService implements ApplicationListener<ContextRefreshedEvent> 
         routeIdToRouteInfo.opsForValue().getOperations().delete(routeIdKeys);
     }
 
-    public Mono<RouteInfo> get(CityInfo cityInfo) {
+    Mono<RouteInfo> get(CityInfo cityInfo) {
         return Mono
                 .create(sink -> {
                     try {
@@ -80,9 +79,9 @@ public class CacheService implements ApplicationListener<ContextRefreshedEvent> 
                 .ofType(RouteInfo.class);
     }
 
-    public Mono<RouteInfo> get(String routeId) {
+    Mono<RouteInfo> get(String routeId) {
         return Mono
-                .create(sink -> {
+                .<RouteInfo>create(sink -> {
                     try {
                         RouteInfo result = routeIdToRouteInfo.opsForValue().get(routeId);
 
@@ -100,13 +99,12 @@ public class CacheService implements ApplicationListener<ContextRefreshedEvent> 
                         sink.error(e);
                     }
                 })
-                .retryBackoff(3, Duration.ofMillis(5), Duration.ofMillis(12))
-                .ofType(RouteInfo.class);
+                .retryBackoff(3, Duration.ofMillis(5), Duration.ofMillis(12));
     }
 
-    void remove(CityInfo cityInfo) {
-        Mono
-                .create(sink -> {
+    Mono<Boolean> remove(CityInfo cityInfo) {
+        return Mono
+                .<Boolean>create(sink -> {
                     try {
                         Boolean removed = cityInfoToRouteInfo.opsForValue().getOperations().delete(cityInfo);
                         sink.success(removed);
@@ -115,17 +113,12 @@ public class CacheService implements ApplicationListener<ContextRefreshedEvent> 
                         sink.error(e);
                     }
                 })
-                .retryBackoff(3, Duration.ofMillis(5), Duration.ofMillis(12))
-                .subscribeOn(Schedulers.parallel())
-                .subscribe(
-                        result -> log.debug("cache removal(cityInfo) operation outcome: {}", result),
-                        throwable -> log.warn("could not remove(cityInfo) result from cache", throwable)
-                );
+                .retryBackoff(3, Duration.ofMillis(5), Duration.ofMillis(12));
     }
 
-    void remove(String routeId) {
-        Mono
-                .create(sink -> {
+    Mono<Boolean> remove(String routeId) {
+        return Mono
+                .<Boolean>create(sink -> {
                     try {
                         Boolean removed = routeIdToRouteInfo.opsForValue().getOperations().delete(routeId);
                         sink.success(removed);
@@ -134,16 +127,11 @@ public class CacheService implements ApplicationListener<ContextRefreshedEvent> 
                         sink.error(e);
                     }
                 })
-                .retryBackoff(3, Duration.ofMillis(5), Duration.ofMillis(12))
-                .subscribeOn(Schedulers.parallel())
-                .subscribe(
-                        result -> log.debug("cache removal(routeId) operation outcome: {}", result),
-                        throwable -> log.warn("could not remove(routeId) result from cache", throwable)
-                );
+                .retryBackoff(3, Duration.ofMillis(5), Duration.ofMillis(12));
     }
 
-    void upsert(CityInfo cityInfo, RouteInfo routeInfo) {
-        Mono
+    Mono<Pair<CityInfo, RouteInfo>> upsert(CityInfo cityInfo, RouteInfo routeInfo) {
+        return Mono
                 .<Pair<CityInfo, RouteInfo>>create(sink -> {
                     try {
                         cityInfoToRouteInfo.opsForValue().set(cityInfo, routeInfo);
@@ -153,16 +141,11 @@ public class CacheService implements ApplicationListener<ContextRefreshedEvent> 
                         sink.error(e);
                     }
                 })
-                .retryBackoff(3, Duration.ofMillis(5), Duration.ofMillis(12))
-                .subscribeOn(Schedulers.parallel())
-                .subscribe(
-                        result -> log.debug("stored(cityInfo,routeInfo) successfully in cache, result: {}", result),
-                        throwable -> log.warn("could not store(cityInfo,routeInfo) result to cache", throwable)
-                );
+                .retryBackoff(3, Duration.ofMillis(5), Duration.ofMillis(12));
     }
 
-    void upsert(String routeId, RouteInfo routeInfo) {
-        Mono
+    Mono<Pair<String, RouteInfo>> upsert(String routeId, RouteInfo routeInfo) {
+        return Mono
                 .<Pair<String, RouteInfo>>create(sink -> {
                     try {
                         routeIdToRouteInfo.opsForValue().set(routeId, routeInfo);
@@ -172,11 +155,6 @@ public class CacheService implements ApplicationListener<ContextRefreshedEvent> 
                         sink.error(e);
                     }
                 })
-                .retryBackoff(3, Duration.ofMillis(5), Duration.ofMillis(12))
-                .subscribeOn(Schedulers.parallel())
-                .subscribe(
-                        result -> log.debug("stored(routeId,routeInfo) successfully in cache, result: {}", result),
-                        throwable -> log.warn("could not store(routeId,routeInfo) result to cache", throwable)
-                );
+                .retryBackoff(3, Duration.ofMillis(5), Duration.ofMillis(12));
     }
 }
