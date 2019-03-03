@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
+import java.time.Duration;
 import java.util.Set;
 
 @Log4j2
@@ -56,45 +57,51 @@ public class CacheService implements ApplicationListener<ContextRefreshedEvent> 
     }
 
     public Mono<RouteInfo> get(CityInfo cityInfo) {
-        return Mono.create(sink -> {
-            try {
-                RouteInfo result = cityInfoToRouteInfo.opsForValue().get(cityInfo);
+        return Mono
+                .create(sink -> {
+                    try {
+                        RouteInfo result = cityInfoToRouteInfo.opsForValue().get(cityInfo);
 
-                if (result != null) {
-                    log.debug("cache hit(cityInfo), result: {}", result);
-                    cacheHitFindByCityInfo.mark();
-                } else {
-                    log.debug("cache miss(cityInfo), cityInfo: {}", cityInfo);
-                    cacheMissFindByCityInfo.mark();
-                }
+                        if (result != null) {
+                            log.debug("cache hit(cityInfo), result: {}", result);
+                            cacheHitFindByCityInfo.mark();
+                        } else {
+                            log.debug("cache miss(cityInfo), cityInfo: {}", cityInfo);
+                            cacheMissFindByCityInfo.mark();
+                        }
 
-                sink.success(result);
-            } catch (Exception e) {
-                log.error("cache get(cityInfo) operation failed", e);
-                sink.error(e);
-            }
-        });
+                        sink.success(result);
+                    } catch (Exception e) {
+                        log.error("cache get(cityInfo) operation failed", e);
+                        sink.error(e);
+                    }
+                })
+                .retryBackoff(3, Duration.ofMillis(5), Duration.ofMillis(12))
+                .ofType(RouteInfo.class);
     }
 
     public Mono<RouteInfo> get(String routeId) {
-        return Mono.create(sink -> {
-            try {
-                RouteInfo result = routeIdToRouteInfo.opsForValue().get(routeId);
+        return Mono
+                .create(sink -> {
+                    try {
+                        RouteInfo result = routeIdToRouteInfo.opsForValue().get(routeId);
 
-                if (result != null) {
-                    log.debug("cache hit(routeId), result: {}", result);
-                    cacheHitFindByRouteId.mark();
-                } else {
-                    log.debug("cache miss(routeId), routeId: {}", routeId);
-                    cacheMissFindByRouteId.mark();
-                }
+                        if (result != null) {
+                            log.debug("cache hit(routeId), result: {}", result);
+                            cacheHitFindByRouteId.mark();
+                        } else {
+                            log.debug("cache miss(routeId), routeId: {}", routeId);
+                            cacheMissFindByRouteId.mark();
+                        }
 
-                sink.success(result);
-            } catch (Exception e) {
-                log.error("cache get(routeId) operation failed", e);
-                sink.error(e);
-            }
-        });
+                        sink.success(result);
+                    } catch (Exception e) {
+                        log.error("cache get(routeId) operation failed", e);
+                        sink.error(e);
+                    }
+                })
+                .retryBackoff(3, Duration.ofMillis(5), Duration.ofMillis(12))
+                .ofType(RouteInfo.class);
     }
 
     void remove(CityInfo cityInfo) {
@@ -108,6 +115,7 @@ public class CacheService implements ApplicationListener<ContextRefreshedEvent> 
                         sink.error(e);
                     }
                 })
+                .retryBackoff(3, Duration.ofMillis(5), Duration.ofMillis(12))
                 .subscribeOn(Schedulers.parallel())
                 .subscribe(
                         result -> log.debug("cache removal(cityInfo) operation outcome: {}", result),
@@ -126,6 +134,7 @@ public class CacheService implements ApplicationListener<ContextRefreshedEvent> 
                         sink.error(e);
                     }
                 })
+                .retryBackoff(3, Duration.ofMillis(5), Duration.ofMillis(12))
                 .subscribeOn(Schedulers.parallel())
                 .subscribe(
                         result -> log.debug("cache removal(routeId) operation outcome: {}", result),
@@ -144,6 +153,7 @@ public class CacheService implements ApplicationListener<ContextRefreshedEvent> 
                         sink.error(e);
                     }
                 })
+                .retryBackoff(3, Duration.ofMillis(5), Duration.ofMillis(12))
                 .subscribeOn(Schedulers.parallel())
                 .subscribe(
                         result -> log.debug("stored(cityInfo,routeInfo) successfully in cache, result: {}", result),
@@ -162,6 +172,7 @@ public class CacheService implements ApplicationListener<ContextRefreshedEvent> 
                         sink.error(e);
                     }
                 })
+                .retryBackoff(3, Duration.ofMillis(5), Duration.ofMillis(12))
                 .subscribeOn(Schedulers.parallel())
                 .subscribe(
                         result -> log.debug("stored(routeId,routeInfo) successfully in cache, result: {}", result),
