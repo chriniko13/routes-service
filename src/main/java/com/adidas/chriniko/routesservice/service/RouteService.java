@@ -38,38 +38,11 @@ public class RouteService {
     public Mono<RouteInfo> find(CityInfo cityInfo) {
         return cacheService
                 .get(cityInfo)
-                .switchIfEmpty(_find(cityInfo))
-                .subscribeOn(Schedulers.parallel());
-    }
-
-    private Mono<RouteInfo> _find(CityInfo cityInfo) {
-        return Mono
-                .<Optional<RouteEntity>>create(sink -> {
-                    try {
-                        Optional<RouteEntity> result
-                                = routeRepository.find(cityInfo.getName(), cityInfo.getCountry());
-                        sink.success(result);
-
-                    } catch (Exception e) {
-                        log.error("error occurred during find city info operation", e);
-                        sink.error(e);
-                    }
-                })
-                .publishOn(Schedulers.elastic())
-                .map(routeEntity -> {
-                    log.debug("will transform fetched entry: {}", routeEntity);
-                    return routeEntity
-                            .map(entity -> {
-                                RouteInfo routeInfo = map(entity);
-                                cacheService.upsert(cityInfo, routeInfo);
-                                return routeInfo;
-                            })
-                            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "no record exists with: " + cityInfo));
-                });
+                .subscribeOn(Schedulers.parallel())
+                .switchIfEmpty(_find(cityInfo));
     }
 
     public Mono<RouteInfo> create(RouteInfo routeInfo) {
-
         return Mono
                 .<Optional<RouteEntity>>create(sink -> {
                     try {
@@ -119,6 +92,9 @@ public class RouteService {
 
                         RouteEntity routeEntity = result.get();
 
+                        cacheService.remove(routeId);
+                        cacheService.remove(extractOrigin(routeEntity));
+
                         updateState(routeInfo, routeEntity);
 
                         transactionTemplate.execute(new TransactionCallbackWithoutResult() {
@@ -128,22 +104,30 @@ public class RouteService {
                             }
                         });
 
+                        cacheService.upsert(routeId, routeInfo);
+                        cacheService.upsert(extractOrigin(routeEntity), routeInfo);
+
                         return routeInfo;
                     }
                 });
     }
 
     public Mono<RouteInfo> find(String routeId) {
-        //TODO add cache support....
-        return searchById(routeId)
-                .map(result -> {
-                    if (!result.isPresent()) {
-                        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "no record exists with id: " + routeId);
-                    } else {
-                        return map(result.get());
-                    }
-                });
-
+        return cacheService
+                .get(routeId)
+                .subscribeOn(Schedulers.parallel())
+                .switchIfEmpty(
+                        searchById(routeId)
+                                .map(result -> {
+                                    if (!result.isPresent()) {
+                                        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "no record exists with id: " + routeId);
+                                    } else {
+                                        RouteInfo routeInfo = map(result.get());
+                                        cacheService.upsert(routeId, routeInfo);
+                                        return routeInfo;
+                                    }
+                                })
+                );
     }
 
     public Mono<RouteInfo> delete(String routeId) {
@@ -161,11 +145,39 @@ public class RouteService {
                             }
                         });
 
-                        CityInfo cityInfo = new CityInfo(routeEntity.getOriginCityName(), routeEntity.getOriginCountry());
+                        CityInfo cityInfo = extractOrigin(routeEntity);
+
                         cacheService.remove(cityInfo);
+                        cacheService.remove(routeEntity.getId());
 
                         return map(result.get());
                     }
+                });
+    }
+
+    private Mono<RouteInfo> _find(CityInfo cityInfo) {
+        return Mono
+                .<Optional<RouteEntity>>create(sink -> {
+                    try {
+                        Optional<RouteEntity> result
+                                = routeRepository.find(cityInfo.getName(), cityInfo.getCountry());
+                        sink.success(result);
+
+                    } catch (Exception e) {
+                        log.error("error occurred during find city info operation", e);
+                        sink.error(e);
+                    }
+                })
+                .subscribeOn(Schedulers.parallel())
+                .map(routeEntity -> {
+                    log.debug("will transform fetched entry: {}", routeEntity);
+                    return routeEntity
+                            .map(entity -> {
+                                RouteInfo routeInfo = map(entity);
+                                cacheService.upsert(cityInfo, routeInfo);
+                                return routeInfo;
+                            })
+                            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "no record exists with: " + cityInfo));
                 });
     }
 
@@ -201,8 +213,8 @@ public class RouteService {
     }
 
     private RouteInfo map(RouteEntity entity) {
-        CityInfo originCityInfo = new CityInfo(entity.getOriginCityName(), entity.getOriginCountry());
-        CityInfo destinyCityInfo = new CityInfo(entity.getDestinyCityName(), entity.getDestinyCountry());
+        CityInfo originCityInfo = extractOrigin(entity);
+        CityInfo destinyCityInfo = extractDestiny(entity);
 
         return new RouteInfo(
                 entity.getId(),
@@ -211,5 +223,13 @@ public class RouteService {
                 entity.getDepartureTime(),
                 entity.getArrivalTime()
         );
+    }
+
+    private CityInfo extractOrigin(RouteEntity routeEntity) {
+        return new CityInfo(routeEntity.getOriginCityName(), routeEntity.getOriginCountry());
+    }
+
+    private CityInfo extractDestiny(RouteEntity routeEntity) {
+        return new CityInfo(routeEntity.getDestinyCityName(), routeEntity.getDestinyCountry());
     }
 }
