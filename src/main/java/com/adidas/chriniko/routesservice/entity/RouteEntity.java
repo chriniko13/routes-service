@@ -24,14 +24,6 @@ import java.time.Instant;
                         query = "SELECT rE FROM RouteEntity rE " +
                                 "WHERE rE.originCityName = :originCityName " +
                                 "AND rE.originCountry = :originCountry"
-                ),
-                @NamedQuery(
-                        name = "RouteEntity.findByOriginCityNameAndOriginCountryAndDestinyCityNameAndDestinyCountry",
-                        query = "SELECT rE FROM RouteEntity rE " +
-                                "WHERE rE.originCityName = :originCityName " +
-                                "AND rE.originCountry = :originCountry " +
-                                "AND rE.destinyCityName = :destinyCityName " +
-                                "AND rE.destinyCountry = :destinyCountry"
                 )
         }
 )

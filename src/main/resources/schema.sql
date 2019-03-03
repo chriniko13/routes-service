@@ -19,7 +19,12 @@ create table if not exists routes
   origin_country    varchar(255) null
 );
 
-create index origin_info_idx on routes (origin_city_name, origin_country);
 
-create unique index route_info_idx on routes (origin_city_name, origin_country, destiny_city_name, destiny_country);
+create index origin_info_idx on routes (origin_city_name, origin_country);
+create index route_info_idx on routes (origin_city_name, origin_country, destiny_city_name, destiny_country);
+
+
+# Note: if we allow only one record of: (originCityName,originCountry,destinyCityName,destinyCountry,x,y)
+#       then we need to add a unique business constraint.
+#create unique index route_info_idx on routes (origin_city_name, origin_country, destiny_city_name, destiny_country);
 

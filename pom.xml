@@ -19,6 +19,11 @@
         <javatuples.version>1.2</javatuples.version>
         <metrics-core.version>3.1.2</metrics-core.version>
         <metrics-servlets.version>3.1.2</metrics-servlets.version>
+
+        <skipUTs>false</skipUTs>
+        <skipITs>false</skipITs>
+
+        <awaitility.version>3.1.6</awaitility.version>
     </properties>
 
     <dependencies>
@@ -120,6 +125,13 @@
             <artifactId>reactor-test</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>org.awaitility</groupId>
+            <artifactId>awaitility</artifactId>
+            <version>${awaitility.version}</version>
+            <scope>test</scope>
+        </dependency>
         <!-- END: Test Dependencies -->
 
 
@@ -137,6 +149,9 @@
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>2.22.0</version>
+                <configuration>
+                    <skipTests>${skipUTs}</skipTests>
+                </configuration>
                 <executions>
                     <execution>
                         <goals>
@@ -164,11 +179,9 @@
                             <goal>verify</goal>
                         </goals>
                         <configuration>
+                            <skipTests>${skipITs}</skipTests>
                             <!-- Sets the VM argument line used when unit tests are run. -->
                             <argLine>${failsafeArgLine}</argLine>
-                            <excludes>
-                                <exclude>**/*Test</exclude>
-                            </excludes>
                             <includes>
                                 <include>**/*IT</include>
                             </includes>

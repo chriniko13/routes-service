@@ -25,18 +25,6 @@ public class RouteRepository {
         return extract(tq);
     }
 
-    public Optional<RouteEntity> find(String originCityName, String originCountry,
-                                      String destinyCityName, String destinyCountry) {
-
-        TypedQuery<RouteEntity> tq = em.createNamedQuery("RouteEntity.findByOriginCityNameAndOriginCountryAndDestinyCityNameAndDestinyCountry", RouteEntity.class);
-        tq.setParameter("originCityName", originCityName);
-        tq.setParameter("originCountry", originCountry);
-        tq.setParameter("destinyCityName", destinyCityName);
-        tq.setParameter("destinyCountry", destinyCountry);
-
-        return extract(tq);
-    }
-
     public Optional<RouteEntity> find(String id) {
         return Optional.ofNullable(em.find(RouteEntity.class, id));
     }

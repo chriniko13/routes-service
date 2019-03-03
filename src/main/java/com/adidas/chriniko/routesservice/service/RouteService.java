@@ -17,6 +17,8 @@ import reactor.core.scheduler.Schedulers;
 
 import java.util.Optional;
 
+//TODO check transactionality....
+
 @Log4j2
 
 @Service
@@ -44,42 +46,28 @@ public class RouteService {
 
     public Mono<RouteInfo> create(RouteInfo routeInfo) {
         return Mono
-                .<Optional<RouteEntity>>create(sink -> {
+                .<RouteInfo>create(sink -> {
                     try {
-                        log.debug("will search if entry exists with info: {}", routeInfo);
+                        log.debug("will store new entry with info: {}", routeInfo);
 
-                        Optional<RouteEntity> result = routeRepository.find(
-                                routeInfo.getCity().getName(), routeInfo.getCity().getCountry(),
-                                routeInfo.getDestinyCity().getName(), routeInfo.getDestinyCity().getCountry()
-                        );
-                        sink.success(result);
+                        RouteEntity routeEntity = new RouteEntity();
+
+                        updateState(routeInfo, routeEntity);
+
+                        transactionTemplate.execute(new TransactionCallbackWithoutResult() {
+                            @Override
+                            protected void doInTransactionWithoutResult(TransactionStatus transactionStatus) {
+                                routeRepository.insert(routeEntity);
+                            }
+                        });
+                        sink.success(routeInfo);
 
                     } catch (Exception e) {
-                        log.error("error occurred during find route info operation", e);
+                        log.error("error occurred during save route info operation", e);
                         sink.error(e);
                     }
                 })
-                .subscribeOn(Schedulers.parallel())
-                .map(result -> {
-                            if (result.isPresent()) {
-                                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "record already exists with info: " + result.get());
-                            } else {
-                                log.debug("will store new entry with info: {}", routeInfo);
-
-                                RouteEntity routeEntity = new RouteEntity();
-
-                                updateState(routeInfo, routeEntity);
-
-                                transactionTemplate.execute(new TransactionCallbackWithoutResult() {
-                                    @Override
-                                    protected void doInTransactionWithoutResult(TransactionStatus transactionStatus) {
-                                        routeRepository.insert(routeEntity);
-                                    }
-                                });
-                                return routeInfo;
-                            }
-                        }
-                );
+                .subscribeOn(Schedulers.parallel());
     }
 
     public Mono<RouteInfo> update(String routeId, RouteInfo routeInfo) {

@@ -55,7 +55,13 @@ TODO
 
 
 #### Execute Integration Tests (you should run docker-compose up first)
-* Execute: `mvn clean integration-test` or `mvn clean verify`
+* Execute: `mvn clean integration-test -DskipUTs=true` or `mvn clean verify -DskipUTs=true`
+
+
+#### Test Coverage (via JaCoCo)
+* In order to generate reports execute: `mvn clean verify`
+    * In order to see unit test coverage open with browser: `target/site/jacoco-ut/index.html`
+    * In order to see integration test coverage open with browser: `target/site/jacoco-it/index.html`
 
 
 #### Useful Docker Commands
