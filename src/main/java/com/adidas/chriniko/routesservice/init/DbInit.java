@@ -29,14 +29,10 @@ public class DbInit {
        log.debug("will create schema now...");
 
         try (Connection connection = dataSource.getConnection()) {
-
             ScriptUtils.executeSqlScript(connection, new ClassPathResource("sql/setup.sql"));
-
         } catch (SQLException e) {
             log.error("error occurred during initialization of schema", e);
         }
-
-
     }
 
 }
