@@ -15,13 +15,13 @@ services:
     expose:
       - '3306'
     volumes:
-      - ./data:/var/lib/mysql
+      - my-db:/var/lib/mysql
 
   redis:
     image: redis
     command: redis-server /usr/local/etc/redis/redis.conf
     volumes:
-      - ./redis.conf:/usr/local/etc/redis/redis.conf
+      - redis-data:/usr/local/etc/redis/redis.conf
     ports:
       - "6379:6379"
     expose:
@@ -53,3 +53,6 @@ services:
 #    volumes:
 #      - /data/routes-service-app
 
+volumes:
+  my-db:
+  redis-data:
