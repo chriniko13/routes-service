@@ -1,8 +1,5 @@
 ### Routes Service - Adidas Backend Assignment
 
-##### Travis Status:
-TODO
-
 
 ```
 ,------.                  ,--.                     ,---.                          ,--.
