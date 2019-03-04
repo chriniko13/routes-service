@@ -62,7 +62,7 @@
 
 
 #### Redis Commander (you should run docker-compose up first)
-*See redis contents from here: `http://localhost:8081`
+* See redis contents from here: `http://localhost:8081`
 
 
 #### Useful Docker Commands

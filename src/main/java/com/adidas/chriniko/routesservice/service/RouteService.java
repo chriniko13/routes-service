@@ -146,7 +146,8 @@ public class RouteService {
                         cacheService
                                 .remove(cityInfo)
                                 .then(cacheService.remove(routeEntity.getId()))
-                                .subscribeOn(Schedulers.parallel()).subscribe();
+                                .subscribeOn(Schedulers.parallel())
+                                .subscribe();
 
                         return map(result.get());
                     }
