@@ -12,7 +12,6 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.MockitoJUnitRunner;
-import org.springframework.http.HttpStatus;
 import org.springframework.transaction.support.TransactionCallbackWithoutResult;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.server.ResponseStatusException;
@@ -39,7 +38,7 @@ public class RouteServiceTest {
     private RouteService routeService;
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         MockitoAnnotations.initMocks(this);
         routeService = new RouteService(routeRepository, transactionTemplate, cacheService);
     }
@@ -89,6 +88,28 @@ public class RouteServiceTest {
                 .verifyComplete();
 
         Mockito.verify(cacheService).upsert(originCityInfo, routeInfo);
+    }
+
+    @Test
+    public void find_by_cityinfo_cache_no_result_case() {
+
+        // given
+
+        CityInfo originCityInfo = new CityInfo("origin city", "origin country");
+
+
+        Mockito.when(cacheService.get(originCityInfo))
+                .thenReturn(Mono.empty());
+
+        Mockito.when(routeRepository.find(originCityInfo.getName(), originCityInfo.getCountry()))
+                .thenReturn(Optional.empty());
+
+
+        // when - then
+        StepVerifier
+                .create(routeService.find(originCityInfo))
+                .expectError(ResponseStatusException.class)
+                .verify();
     }
 
     @Test
@@ -170,18 +191,79 @@ public class RouteServiceTest {
     public void update_record_not_exists_case() {
 
         // given
+        Instant departureTime = Instant.now();
+        long timeToArrive = TimeUnit.SECONDS.convert(2, TimeUnit.HOURS);
+        Instant arrivalTime = departureTime.plusSeconds(timeToArrive);
+
+        CityInfo originCityInfo = new CityInfo("origin city", "origin country");
+        CityInfo destinyCityInfo = new CityInfo("destiny city", "destiny country");
+
+        String id = UUID.randomUUID().toString();
+        RouteInfo routeInfo = new RouteInfo(
+                id,
+                originCityInfo,
+                destinyCityInfo,
+                departureTime,
+                arrivalTime);
+
+        Mockito.when(routeRepository.find(id))
+                .thenReturn(Optional.empty());
 
 
         // when - then
+        StepVerifier.create(routeService.update(id, routeInfo))
+                .expectError(ResponseStatusException.class)
+                .verify();
     }
 
     @Test
     public void update_record_exists_case() {
 
         // given
+        Instant departureTime = Instant.now();
+        long timeToArrive = TimeUnit.SECONDS.convert(2, TimeUnit.HOURS);
+        Instant arrivalTime = departureTime.plusSeconds(timeToArrive);
 
+        CityInfo originCityInfo = new CityInfo("origin city", "origin country");
+        CityInfo destinyCityInfo = new CityInfo("destiny city", "destiny country");
+
+        String id = UUID.randomUUID().toString();
+        RouteInfo routeInfo = new RouteInfo(
+                id,
+                originCityInfo,
+                destinyCityInfo,
+                departureTime,
+                arrivalTime);
+
+        RouteEntity routeEntity = new RouteEntity();
+        routeEntity.setId(id);
+        routeEntity.setOriginCityName(originCityInfo.getName());
+        routeEntity.setOriginCountry(originCityInfo.getCountry());
+        routeEntity.setDestinyCityName(destinyCityInfo.getName());
+        routeEntity.setDestinyCountry(destinyCityInfo.getCountry());
+        routeEntity.setDepartureTime(departureTime);
+        routeEntity.setArrivalTime(arrivalTime);
+
+        Mockito.when(routeRepository.find(id))
+                .thenReturn(Optional.of(routeEntity));
+
+
+        Mockito.when(cacheService.remove(id))
+                .thenReturn(Mono.just(true));
+
+        Mockito.when(cacheService.remove(originCityInfo))
+                .thenReturn(Mono.just(true));
+
+        Mockito.when(cacheService.upsert(id, routeInfo))
+                .thenReturn(Mono.just(Pair.with(id, routeInfo)));
+
+        Mockito.when(cacheService.upsert(originCityInfo, routeInfo))
+                .thenReturn(Mono.just(Pair.with(originCityInfo, routeInfo)));
 
         // when - then
+        StepVerifier.create(routeService.update(id, routeInfo))
+                .expectNext(routeInfo)
+                .verifyComplete();
 
     }
 
@@ -189,18 +271,128 @@ public class RouteServiceTest {
     public void find_by_routeid_miss_case() {
 
         // given
+        String routeId = UUID.randomUUID().toString();
 
+        Instant departureTime = Instant.now();
+        long timeToArrive = TimeUnit.SECONDS.convert(2, TimeUnit.HOURS);
+        Instant arrivalTime = departureTime.plusSeconds(timeToArrive);
+
+        CityInfo originCityInfo = new CityInfo("origin city", "origin country");
+        CityInfo destinyCityInfo = new CityInfo("destiny city", "destiny country");
+
+        String id = UUID.randomUUID().toString();
+
+        RouteInfo routeInfo = new RouteInfo(
+                id,
+                originCityInfo,
+                destinyCityInfo,
+                departureTime,
+                arrivalTime);
+
+        RouteEntity routeEntity = new RouteEntity();
+        routeEntity.setId(id);
+        routeEntity.setOriginCityName(originCityInfo.getName());
+        routeEntity.setOriginCountry(originCityInfo.getCountry());
+        routeEntity.setDestinyCityName(destinyCityInfo.getName());
+        routeEntity.setDestinyCountry(destinyCityInfo.getCountry());
+        routeEntity.setDepartureTime(departureTime);
+        routeEntity.setArrivalTime(arrivalTime);
+
+        Mockito.when(cacheService.get(routeId))
+                .thenReturn(Mono.empty());
+
+        Mockito.when(routeRepository.find(routeId))
+                .thenReturn(Optional.of(routeEntity));
+
+        Mockito.when(cacheService.upsert(routeId, routeInfo))
+                .thenReturn(Mono.just(Pair.with(routeId, routeInfo)));
 
         // when - then
+        StepVerifier.create(routeService.find(routeId))
+                .expectNext(routeInfo)
+                .verifyComplete();
+
+        Mockito.verify(cacheService).upsert(routeId, routeInfo);
+
     }
 
     @Test
     public void find_by_routeid_hit_case() {
 
         // given
+        String routeId = UUID.randomUUID().toString();
 
+        Instant departureTime = Instant.now();
+        long timeToArrive = TimeUnit.SECONDS.convert(2, TimeUnit.HOURS);
+        Instant arrivalTime = departureTime.plusSeconds(timeToArrive);
+
+        CityInfo originCityInfo = new CityInfo("origin city", "origin country");
+        CityInfo destinyCityInfo = new CityInfo("destiny city", "destiny country");
+
+        String id = UUID.randomUUID().toString();
+
+        RouteInfo routeInfo = new RouteInfo(
+                id,
+                originCityInfo,
+                destinyCityInfo,
+                departureTime,
+                arrivalTime);
+
+        Mockito.when(cacheService.get(routeId))
+                .thenReturn(Mono.just(routeInfo));
 
         // when - then
+        StepVerifier.create(routeService.find(routeId))
+                .expectNext(routeInfo)
+                .verifyComplete();
+
+        Mockito.verify(cacheService, Mockito.times(0))
+                .upsert(routeId, routeInfo);
+    }
+
+    @Test
+    public void find_by_routeid_no_result_case() {
+
+        // given
+        String routeId = UUID.randomUUID().toString();
+
+        Instant departureTime = Instant.now();
+        long timeToArrive = TimeUnit.SECONDS.convert(2, TimeUnit.HOURS);
+        Instant arrivalTime = departureTime.plusSeconds(timeToArrive);
+
+        CityInfo originCityInfo = new CityInfo("origin city", "origin country");
+        CityInfo destinyCityInfo = new CityInfo("destiny city", "destiny country");
+
+        String id = UUID.randomUUID().toString();
+
+        RouteInfo routeInfo = new RouteInfo(
+                id,
+                originCityInfo,
+                destinyCityInfo,
+                departureTime,
+                arrivalTime);
+
+        RouteEntity routeEntity = new RouteEntity();
+        routeEntity.setId(id);
+        routeEntity.setOriginCityName(originCityInfo.getName());
+        routeEntity.setOriginCountry(originCityInfo.getCountry());
+        routeEntity.setDestinyCityName(destinyCityInfo.getName());
+        routeEntity.setDestinyCountry(destinyCityInfo.getCountry());
+        routeEntity.setDepartureTime(departureTime);
+        routeEntity.setArrivalTime(arrivalTime);
+
+        Mockito.when(cacheService.get(routeId))
+                .thenReturn(Mono.empty());
+
+        Mockito.when(routeRepository.find(routeId))
+                .thenReturn(Optional.empty());
+
+        // when - then
+        StepVerifier.create(routeService.find(routeId))
+                .expectError(ResponseStatusException.class)
+                .verify();
+
+        Mockito.verify(cacheService, Mockito.times(0)).upsert(routeId, routeInfo);
     }
 
     @Test
