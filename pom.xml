@@ -24,6 +24,9 @@
         <skipITs>false</skipITs>
 
         <awaitility.version>3.1.6</awaitility.version>
+        <disruptor.version>3.3.6</disruptor.version>
+        <commons-csv.version>1.4</commons-csv.version>
+        <combinatoricslib.version>2.2</combinatoricslib.version>
     </properties>
 
     <dependencies>
@@ -54,7 +57,7 @@
         <dependency>
             <groupId>com.lmax</groupId>
             <artifactId>disruptor</artifactId>
-            <version>3.3.6</version>
+            <version>${disruptor.version}</version>
         </dependency>
 
         <dependency>
@@ -110,6 +113,26 @@
             <groupId>io.dropwizard.metrics</groupId>
             <artifactId>metrics-jmx</artifactId>
         </dependency>
+
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-csv</artifactId>
+            <version>${commons-csv.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.googlecode.combinatoricslib</groupId>
+            <artifactId>combinatoricslib</artifactId>
+            <version>${combinatoricslib.version}</version>
+            <scope>compile</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-math3</artifactId>
+            <version>3.6.1</version>
+        </dependency>
+
         <!-- END: Dev Dependencies -->
 
 

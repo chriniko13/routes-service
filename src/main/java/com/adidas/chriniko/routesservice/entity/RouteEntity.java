@@ -1,8 +1,6 @@
 package com.adidas.chriniko.routesservice.entity;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import lombok.*;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import javax.persistence.*;
@@ -11,6 +9,8 @@ import java.time.Instant;
 @EqualsAndHashCode(callSuper = false)
 @Data
 @ToString(callSuper = true)
+@NoArgsConstructor
+@AllArgsConstructor
 
 @Entity
 @Table(name = "routes")

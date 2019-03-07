@@ -11,6 +11,8 @@ import org.springframework.stereotype.Component;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.List;
+import java.util.Map;
 
 @Log4j2
 
@@ -18,18 +20,29 @@ import java.sql.SQLException;
 public class DbInit {
 
     private final HikariDataSource dataSource;
+    private final CitiesCsvProcessor citiesCsvProcessor;
+    private final RouteGenerator routeGenerator;
 
     @Autowired
-    public DbInit(HikariDataSource dataSource) {
+    public DbInit(HikariDataSource dataSource, CitiesCsvProcessor citiesCsvProcessor, RouteGenerator routeGenerator) {
         this.dataSource = dataSource;
+        this.citiesCsvProcessor = citiesCsvProcessor;
+        this.routeGenerator = routeGenerator;
     }
 
     @EventListener
     public void createSchema(ContextRefreshedEvent event) {
-       log.debug("will create schema now...");
+        log.debug("will create schema now...");
 
         try (Connection connection = dataSource.getConnection()) {
+
+            // Note: setup table.
             ScriptUtils.executeSqlScript(connection, new ClassPathResource("sql/setup.sql"));
+
+            // Note: insert random info.
+            Map<String, List<String>> citiesByCountry = citiesCsvProcessor.getCitiesByCountry();
+            routeGenerator.generate(citiesByCountry);
+
         } catch (SQLException e) {
             log.error("error occurred during initialization of schema", e);
         }
