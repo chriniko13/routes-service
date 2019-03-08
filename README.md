@@ -93,6 +93,17 @@ where origin_city_name NOT IN (
 ```
 
 
+#### Additional Application Properties
+
+* `generate.routes=true` generate sample data on startup of service.
+
+* `cities-csv-processor.display-parsing-info=false` if we would like to display csv parsing information during generation of sample data.
+
+* `route-data-generator.display-storing-info=false` if we would like to display storing information during generation of sample data.
+
+* `route-data-generator.no-of-itineraries-for-selected-root-city=4` how many itineraries we will generate for the random selected root city.
+
+
 #### Example Request
 
 * POST at: localhost:8080/api/route-info/search
