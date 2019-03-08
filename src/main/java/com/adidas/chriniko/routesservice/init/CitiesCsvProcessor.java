@@ -45,7 +45,7 @@ public class CitiesCsvProcessor {
                     citiesGroupByCountry.computeIfPresent(
                             country,
                             (_country, cities) -> {
-                                cities.add(record.get("city"));
+                                cities.add(record.get("city_ascii"));
                                 return cities;
                             }
                     );
@@ -54,7 +54,7 @@ public class CitiesCsvProcessor {
                             country,
                             _country -> {
                                 List<String> cities = new LinkedList<>();
-                                cities.add(record.get("city"));
+                                cities.add(record.get("city_ascii"));
                                 return cities;
                             }
                     );
