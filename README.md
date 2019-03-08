@@ -100,8 +100,8 @@ where origin_city_name NOT IN (
   
   ```json
     {
-        "name":"Pirgos",
-        "country":"Greece"
+    	"name":"Santander",
+    	"country":"Spain"
     }
 
   ```
@@ -111,56 +111,56 @@ where origin_city_name NOT IN (
     {
         "results": [
             {
-                "id": "02137e84-1fd2-4f93-ba5d-afd028677db6",
+                "id": "1c4173b8-9569-44ef-9689-925f4b0e060f",
                 "city": {
-                    "name": "Pirgos",
-                    "country": "Greece"
+                    "name": "Santander",
+                    "country": "Spain"
                 },
                 "destinyCity": {
-                    "name": "Hios",
-                    "country": "Greece"
+                    "name": "Pamplona",
+                    "country": "Spain"
                 },
-                "departureTime": "2019-03-08@15:08:16",
-                "arrivalTime": "2019-03-08@19:08:16"
+                "departureTime": "2019-03-08@18:28:00",
+                "arrivalTime": "2019-03-08@22:28:00"
             },
             {
-                "id": "69a9317c-ef4e-472a-b377-cdcc0c925a65",
+                "id": "4dd8d64d-8b19-4427-b463-72b2f8cc0dd3",
                 "city": {
-                    "name": "Pirgos",
-                    "country": "Greece"
+                    "name": "Santander",
+                    "country": "Spain"
                 },
                 "destinyCity": {
-                    "name": "Alexandroupoli",
-                    "country": "Greece"
+                    "name": "Lorca",
+                    "country": "Spain"
                 },
-                "departureTime": "2019-03-08@15:08:16",
-                "arrivalTime": "2019-03-08@18:08:16"
+                "departureTime": "2019-03-08@18:28:00",
+                "arrivalTime": "2019-03-08@20:28:00"
             },
             {
-                "id": "8dc6f777-652b-4ba6-bcf3-fe59365e7cf2",
+                "id": "e66fd07a-081d-4d36-b9a1-ed403bed122f",
                 "city": {
-                    "name": "Pirgos",
-                    "country": "Greece"
+                    "name": "Santander",
+                    "country": "Spain"
                 },
                 "destinyCity": {
-                    "name": "Kerkira",
-                    "country": "Greece"
+                    "name": "Oviedo",
+                    "country": "Spain"
                 },
-                "departureTime": "2019-03-08@15:08:16",
-                "arrivalTime": "2019-03-08@16:08:16"
+                "departureTime": "2019-03-08@18:28:00",
+                "arrivalTime": "2019-03-08@19:28:00"
             },
             {
-                "id": "abb497a7-82a4-4563-9d57-3cce1c6da27a",
+                "id": "ed778e07-5ace-4f0f-a244-202a0985c301",
                 "city": {
-                    "name": "Pirgos",
-                    "country": "Greece"
+                    "name": "Santander",
+                    "country": "Spain"
                 },
                 "destinyCity": {
-                    "name": "Alexandroupoli",
-                    "country": "Greece"
+                    "name": "Vigo",
+                    "country": "Spain"
                 },
-                "departureTime": "2019-03-08@15:08:16",
-                "arrivalTime": "2019-03-08@16:08:16"
+                "departureTime": "2019-03-08@18:28:00",
+                "arrivalTime": "2019-03-08@19:28:00"
             }
         ]
     }
