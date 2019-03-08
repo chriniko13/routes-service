@@ -5,6 +5,7 @@ import com.adidas.chriniko.routesservice.error.ProcessingException;
 import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 import org.javatuples.Pair;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.security.SecureRandom;
@@ -19,8 +20,10 @@ import java.util.stream.Collectors;
 @Component
 public class RouteDataGenerator {
 
-    private static final boolean DISPLAY_STORING_INFO = false;
-    private static final int NO_OF_ITINERARIES_FOR_SELECTED_ROOT_CITY = 3;
+    private static final int NO_OF_ITINERARIES_FOR_SELECTED_ROOT_CITY = 4;
+
+    @Value("${route-data-generator.display-storing-info}")
+    private boolean displayStoringInfo;
 
     @Getter
     public static class RouteDataGeneratorResult {
@@ -90,6 +93,7 @@ public class RouteDataGenerator {
 
                         String nextCity = cities.get(nextCityIdx);
 
+                        //TODO keep previous time in order to create more realistic times...
                         Instant departureTime = Instant.now();
                         Instant arrivalTime = departureTime.plusSeconds(TimeUnit.SECONDS.convert(random.nextInt(4) + 1, TimeUnit.HOURS));
 
@@ -129,7 +133,7 @@ public class RouteDataGenerator {
     }
 
     private void log(String country, List<RouteEntity> routes) {
-        if (DISPLAY_STORING_INFO) {
+        if (displayStoringInfo) {
             List<Pair<String, String>> routesForPrinting = routes
                     .stream()
                     .map(r -> Pair.with(r.getOriginCityName(), r.getDestinyCityName()))

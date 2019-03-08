@@ -5,6 +5,7 @@ import com.adidas.chriniko.routesservice.Chrono;
 import com.adidas.chriniko.routesservice.RoutesServiceApplication;
 import com.adidas.chriniko.routesservice.dto.CityInfo;
 import com.adidas.chriniko.routesservice.dto.RouteInfo;
+import com.adidas.chriniko.routesservice.dto.RouteInfoResult;
 import com.adidas.chriniko.routesservice.repository.RouteRepository;
 import org.awaitility.Awaitility;
 import org.junit.Before;
@@ -20,6 +21,7 @@ import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -44,7 +46,7 @@ public class SpecificationIT {
     private RouteRepository routeRepository;
 
     @Autowired
-    private RedisTemplate<CityInfo, RouteInfo> cityInfoToRouteInfoCache;
+    private RedisTemplate<CityInfo, List<RouteInfo>> cityInfoToRouteInfosCache;
 
     @Autowired
     private RedisTemplate<String, RouteInfo> routeIdToRouteInfoCache;
@@ -56,7 +58,6 @@ public class SpecificationIT {
 
     @Test
     public void complete_flow_works_as_expected() {
-
 
         // given
         CityInfo originCityInfo = new CityInfo("origin city", "origin country");
@@ -92,21 +93,23 @@ public class SpecificationIT {
                 .atMost(10, TimeUnit.SECONDS)
                 .untilAsserted(() -> {
                     assertNotNull(routeRepository.find(resultFromCreateNewRouteInfo.getId()));
-                    assertNull(cityInfoToRouteInfoCache.opsForValue().get(originCityInfo));
+                    assertNull(cityInfoToRouteInfosCache.opsForValue().get(originCityInfo));
                 });
 
 
         // when - find by city info
-        final RouteInfo resultFindByCityInfo = webClient.post()
+        final RouteInfoResult resultFindByCityInfoResult = webClient.post()
                 .uri("/search")
                 .body(BodyInserters.fromObject(originCityInfo))
                 .exchange()
                 .block()
-                .body(BodyExtractors.toMono(RouteInfo.class))
+                .body(BodyExtractors.toMono(RouteInfoResult.class))
                 .block();
 
 
         // then
+        RouteInfo resultFindByCityInfo = resultFindByCityInfoResult.getResults().get(0);
+
         assertNotNull(resultFindByCityInfo);
         assertEquals("origin city", resultFindByCityInfo.getCity().getName());
         assertEquals("origin country", resultFindByCityInfo.getCity().getCountry());
@@ -119,7 +122,7 @@ public class SpecificationIT {
 
         Awaitility.await().atMost(10, TimeUnit.SECONDS)
                 .untilAsserted(() -> {
-                    assertNotNull(cityInfoToRouteInfoCache.opsForValue().get(originCityInfo));
+                    assertNotNull(cityInfoToRouteInfosCache.opsForValue().get(originCityInfo));
                 });
 
 
@@ -173,7 +176,7 @@ public class SpecificationIT {
                         .plusSeconds(TimeUnit.SECONDS.convert(1, TimeUnit.HOURS))
         );
 
-        int cityInfoKeys = cityInfoToRouteInfoCache.opsForValue().getOperations().keys(new CityInfo("*", "*")).size();
+        int cityInfoKeys = cityInfoToRouteInfosCache.opsForValue().getOperations().keys(new CityInfo("*", "*")).size();
         int routeIdKeys = routeIdToRouteInfoCache.opsForValue().getOperations().keys("*").size();
 
         final RouteInfo resultUpdate = webClient.put()
@@ -205,14 +208,14 @@ public class SpecificationIT {
                             resultUpdate.getCity().getName(),
                             resultUpdate.getCity().getCountry());
 
-                    RouteInfo rI = cityInfoToRouteInfoCache.opsForValue().get(cityInfo);
-                    assertEquals(resultUpdate, rI);
+                    List<RouteInfo> cityInfoToRouteInfosCacheResult = cityInfoToRouteInfosCache.opsForValue().get(cityInfo);
+                    assertTrue(cityInfoToRouteInfosCacheResult.contains(resultUpdate));
 
-                    Set<CityInfo> k1 = cityInfoToRouteInfoCache.opsForValue().getOperations().keys(new CityInfo("*", "*"));
+                    Set<CityInfo> k1 = cityInfoToRouteInfosCache.opsForValue().getOperations().keys(new CityInfo("*", "*"));
                     assertEquals(cityInfoKeys, k1.size());
 
-                    rI = routeIdToRouteInfoCache.opsForValue().get(resultUpdate.getId());
-                    assertEquals(resultUpdate, rI);
+                    RouteInfo routeIdToRouteInfoCacheResult = routeIdToRouteInfoCache.opsForValue().get(resultUpdate.getId());
+                    assertEquals(resultUpdate, routeIdToRouteInfoCacheResult);
 
                     Set<String> k2 = routeIdToRouteInfoCache.opsForValue().getOperations().keys("*");
                     assertEquals(routeIdKeys, k2.size());
@@ -248,7 +251,7 @@ public class SpecificationIT {
 
                     assertNull(routeIdToRouteInfoCache.opsForValue().get(resultDelete.getId()));
 
-                    assertNull(cityInfoToRouteInfoCache.opsForValue().get(resultDelete.getCity()));
+                    assertNull(cityInfoToRouteInfosCache.opsForValue().get(resultDelete.getCity()));
 
                 });
 

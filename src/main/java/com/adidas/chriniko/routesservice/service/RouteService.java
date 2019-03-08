@@ -16,8 +16,10 @@ import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
 
 
 @Log4j2
@@ -38,7 +40,7 @@ public class RouteService {
         this.cacheService = cacheService;
     }
 
-    public Mono<RouteInfo> find(CityInfo cityInfo) {
+    public Mono<List<RouteInfo>> find(CityInfo cityInfo) {
         return cacheService
                 .get(cityInfo)
                 .subscribeOn(Schedulers.parallel())
@@ -154,15 +156,15 @@ public class RouteService {
                 });
     }
 
-    private Mono<RouteInfo> _find(CityInfo cityInfo) {
+    private Mono<List<RouteInfo>> _find(CityInfo cityInfo) {
         return Mono
-                .<RouteEntity>create(sink -> {
+                .<List<RouteEntity>>create(sink -> {
                     try {
-                        RouteEntity result = routeRepository
+                        List<RouteEntity> results = routeRepository
                                 .findByOrigin(cityInfo.getName(), cityInfo.getCountry())
                                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "no record exists with: " + cityInfo));
 
-                        sink.success(result);
+                        sink.success(results);
 
                     } catch (Exception e) {
                         log.error("error occurred during find city info operation", e);
@@ -171,9 +173,16 @@ public class RouteService {
                 })
                 .subscribeOn(Schedulers.parallel())
                 .publishOn(Schedulers.elastic())
-                .map(routeEntity -> Pair.with(routeEntity, map(routeEntity)))
+                .map(routeEntities -> {
+
+                    return routeEntities
+                            .stream()
+                            .map(this::map)
+                            .collect(Collectors.toList());
+
+                })
                 .publishOn(Schedulers.parallel())
-                .flatMap(info -> cacheService.upsert(cityInfo, info.getValue1()).map(Pair::getValue1));
+                .flatMap(infos -> cacheService.upsert(cityInfo, infos).map(Pair::getValue1));
     }
 
     private Mono<Optional<RouteEntity>> searchById(String routeId) {

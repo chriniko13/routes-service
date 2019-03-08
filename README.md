@@ -92,6 +92,83 @@ where origin_city_name NOT IN (
 );
 ```
 
+
+#### Example Request
+
+* POST at: localhost:8080/api/route-info/search
+  with body:
+  
+  ```json
+    {
+        "name":"Pirgos",
+        "country":"Greece"
+    }
+
+  ```
+  
+  Response:
+  ```json
+    {
+        "results": [
+            {
+                "id": "02137e84-1fd2-4f93-ba5d-afd028677db6",
+                "city": {
+                    "name": "Pirgos",
+                    "country": "Greece"
+                },
+                "destinyCity": {
+                    "name": "Hios",
+                    "country": "Greece"
+                },
+                "departureTime": "2019-03-08@15:08:16",
+                "arrivalTime": "2019-03-08@19:08:16"
+            },
+            {
+                "id": "69a9317c-ef4e-472a-b377-cdcc0c925a65",
+                "city": {
+                    "name": "Pirgos",
+                    "country": "Greece"
+                },
+                "destinyCity": {
+                    "name": "Alexandroupoli",
+                    "country": "Greece"
+                },
+                "departureTime": "2019-03-08@15:08:16",
+                "arrivalTime": "2019-03-08@18:08:16"
+            },
+            {
+                "id": "8dc6f777-652b-4ba6-bcf3-fe59365e7cf2",
+                "city": {
+                    "name": "Pirgos",
+                    "country": "Greece"
+                },
+                "destinyCity": {
+                    "name": "Kerkira",
+                    "country": "Greece"
+                },
+                "departureTime": "2019-03-08@15:08:16",
+                "arrivalTime": "2019-03-08@16:08:16"
+            },
+            {
+                "id": "abb497a7-82a4-4563-9d57-3cce1c6da27a",
+                "city": {
+                    "name": "Pirgos",
+                    "country": "Greece"
+                },
+                "destinyCity": {
+                    "name": "Alexandroupoli",
+                    "country": "Greece"
+                },
+                "departureTime": "2019-03-08@15:08:16",
+                "arrivalTime": "2019-03-08@16:08:16"
+            }
+        ]
+    }
+  ```
+
+
+
+
 #### Useful Docker Commands
 
 * `docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' <container_id>`

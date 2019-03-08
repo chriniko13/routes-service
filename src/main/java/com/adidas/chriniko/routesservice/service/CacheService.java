@@ -13,6 +13,8 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 @Log4j2
@@ -20,7 +22,7 @@ import java.util.Set;
 @Service
 public class CacheService implements ApplicationListener<ContextRefreshedEvent> {
 
-    private final RedisTemplate<CityInfo, RouteInfo> cityInfoToRouteInfo;
+    private final RedisTemplate<CityInfo, List<RouteInfo>> cityInfoToRouteInfos;
     private final RedisTemplate<String, RouteInfo> routeIdToRouteInfo;
 
     private final Meter cacheHitFindByCityInfo;
@@ -30,13 +32,13 @@ public class CacheService implements ApplicationListener<ContextRefreshedEvent> 
 
 
     @Autowired
-    public CacheService(RedisTemplate<CityInfo, RouteInfo> cityInfoToRouteInfo,
+    public CacheService(RedisTemplate<CityInfo, List<RouteInfo>> cityInfoToRouteInfos,
                         RedisTemplate<String, RouteInfo> routeIdToRouteInfo,
                         Meter cacheHitFindByCityInfo,
                         Meter cacheMissFindByCityInfo,
                         Meter cacheHitFindByRouteId,
                         Meter cacheMissFindByRouteId) {
-        this.cityInfoToRouteInfo = cityInfoToRouteInfo;
+        this.cityInfoToRouteInfos = cityInfoToRouteInfos;
         this.routeIdToRouteInfo = routeIdToRouteInfo;
         this.cacheHitFindByCityInfo = cacheHitFindByCityInfo;
         this.cacheMissFindByCityInfo = cacheMissFindByCityInfo;
@@ -46,37 +48,36 @@ public class CacheService implements ApplicationListener<ContextRefreshedEvent> 
 
     @Override
     public void onApplicationEvent(ContextRefreshedEvent event) {
-        Set<CityInfo> cityInfoKeys = cityInfoToRouteInfo.opsForValue().getOperations().keys(new CityInfo("*", "*"));
+        Set<CityInfo> cityInfoKeys = cityInfoToRouteInfos.opsForValue().getOperations().keys(new CityInfo("*", "*"));
         log.debug("will clear redis [cache(CityInfo) ---> RouteInfo], keys: {}", cityInfoKeys);
-        cityInfoToRouteInfo.opsForValue().getOperations().delete(cityInfoKeys);
+        cityInfoToRouteInfos.opsForValue().getOperations().delete(cityInfoKeys);
 
         Set<String> routeIdKeys = routeIdToRouteInfo.opsForValue().getOperations().keys("*");
         log.debug("will clear redis [cache(routeId:String) ---> RouteInfo], keys: {}", routeIdKeys);
         routeIdToRouteInfo.opsForValue().getOperations().delete(routeIdKeys);
     }
 
-    Mono<RouteInfo> get(CityInfo cityInfo) {
+    Mono<List<RouteInfo>> get(CityInfo cityInfo) {
         return Mono
-                .create(sink -> {
+                .<List<RouteInfo>>create(sink -> {
                     try {
-                        RouteInfo result = cityInfoToRouteInfo.opsForValue().get(cityInfo);
+                        List<RouteInfo> results = cityInfoToRouteInfos.opsForValue().get(cityInfo);
 
-                        if (result != null) {
-                            log.debug("cache hit(cityInfo), result: {}", result);
+                        if (results != null) {
+                            log.debug("cache hit(cityInfo), result: {}", results);
                             cacheHitFindByCityInfo.mark();
                         } else {
                             log.debug("cache miss(cityInfo), cityInfo: {}", cityInfo);
                             cacheMissFindByCityInfo.mark();
                         }
 
-                        sink.success(result);
+                        sink.success(results);
                     } catch (Exception e) {
                         log.error("cache get(cityInfo) operation failed", e);
                         sink.error(e);
                     }
                 })
-                .retryBackoff(3, Duration.ofMillis(5), Duration.ofMillis(12))
-                .ofType(RouteInfo.class);
+                .retryBackoff(3, Duration.ofMillis(5), Duration.ofMillis(12));
     }
 
     Mono<RouteInfo> get(String routeId) {
@@ -106,7 +107,7 @@ public class CacheService implements ApplicationListener<ContextRefreshedEvent> 
         return Mono
                 .<Boolean>create(sink -> {
                     try {
-                        Boolean removed = cityInfoToRouteInfo.opsForValue().getOperations().delete(cityInfo);
+                        Boolean removed = cityInfoToRouteInfos.opsForValue().getOperations().delete(cityInfo);
                         sink.success(removed);
                     } catch (Exception e) {
                         log.error("cache remove(cityInfo) operation failed", e);
@@ -130,12 +131,33 @@ public class CacheService implements ApplicationListener<ContextRefreshedEvent> 
                 .retryBackoff(3, Duration.ofMillis(5), Duration.ofMillis(12));
     }
 
-    Mono<Pair<CityInfo, RouteInfo>> upsert(CityInfo cityInfo, RouteInfo routeInfo) {
+    Mono<Pair<CityInfo, List<RouteInfo>>> upsert(CityInfo cityInfo, RouteInfo routeInfo) {
+        List<RouteInfo> routeInfos = new ArrayList<>();
+        routeInfos.add(routeInfo);
+        return this.upsert(cityInfo, routeInfos);
+    }
+
+    Mono<Pair<CityInfo, List<RouteInfo>>> upsert(CityInfo cityInfo, List<RouteInfo> routeInfos) {
         return Mono
-                .<Pair<CityInfo, RouteInfo>>create(sink -> {
+                .<Pair<CityInfo, List<RouteInfo>>>create(sink -> {
                     try {
-                        cityInfoToRouteInfo.opsForValue().set(cityInfo, routeInfo);
-                        sink.success(Pair.with(cityInfo, routeInfo));
+                        List<RouteInfo> existingRouteInfos = cityInfoToRouteInfos.opsForValue().get(cityInfo);
+
+                        if (existingRouteInfos != null) { // Note: if entries already exists then...
+
+                            existingRouteInfos.removeAll(routeInfos);
+                            existingRouteInfos.addAll(routeInfos);
+
+                            cityInfoToRouteInfos.opsForValue().set(cityInfo, existingRouteInfos);
+
+                            sink.success(Pair.with(cityInfo, existingRouteInfos));
+
+                        } else {
+
+                            cityInfoToRouteInfos.opsForValue().set(cityInfo, routeInfos);
+                            sink.success(Pair.with(cityInfo, routeInfos));
+                        }
+
                     } catch (Exception e) {
                         log.error("cache upsert(cityInfo,routeInfo) operation failed", e);
                         sink.error(e);

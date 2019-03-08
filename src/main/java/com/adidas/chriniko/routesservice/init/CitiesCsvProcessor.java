@@ -4,6 +4,7 @@ import com.adidas.chriniko.routesservice.error.ProcessingException;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.BufferedReader;
@@ -19,7 +20,9 @@ import java.util.*;
 public class CitiesCsvProcessor {
 
     private static final String[] HEADERS = {"city", "city_ascii", "lat", "lng", "country", "iso2", "iso3", "admin_name", "capital", "population", "id"};
-    private static final boolean DISPLAY_PARSING_INFO = false;
+
+    @Value("${cities-csv-processor.display-parsing-info}")
+    private boolean displayParsingInfo;
 
     public Map<String, List<String>> getCitiesByCountry() {
 
@@ -62,7 +65,7 @@ public class CitiesCsvProcessor {
 
                 log.debug("total csv records: {}", sum);
 
-                if (DISPLAY_PARSING_INFO) {
+                if (displayParsingInfo) {
                     log.debug("countries: {}", citiesGroupByCountry.keySet());
                     log.debug("countries.size(): {}", citiesGroupByCountry.keySet().size());
                     citiesGroupByCountry.forEach((city, countries) -> log.debug("city: {} --- countries: {}", city, countries));

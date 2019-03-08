@@ -2,6 +2,7 @@ package com.adidas.chriniko.routesservice.resource;
 
 import com.adidas.chriniko.routesservice.dto.CityInfo;
 import com.adidas.chriniko.routesservice.dto.RouteInfo;
+import com.adidas.chriniko.routesservice.dto.RouteInfoResult;
 import com.adidas.chriniko.routesservice.service.RouteService;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
 import javax.validation.Valid;
+import java.util.List;
 
 @Log4j2
 
@@ -30,9 +32,9 @@ public class RouteResource {
             produces = MediaType.APPLICATION_JSON_UTF8_VALUE
     )
     public @ResponseBody
-    Mono<RouteInfo> find(@RequestBody @Valid CityInfo input) {
+    Mono<RouteInfoResult> find(@RequestBody @Valid CityInfo input) {
         log.debug("  >> search: {}", input);
-        return routeService.find(input);
+        return routeService.find(input).map(RouteInfoResult::new);
     }
 
     @PostMapping(

@@ -19,6 +19,8 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import java.time.Instant;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -72,22 +74,25 @@ public class RouteServiceTest {
         routeEntity.setDepartureTime(departureTime);
         routeEntity.setArrivalTime(arrivalTime);
 
+        List<RouteEntity> routeEntities = Collections.singletonList(routeEntity);
+        List<RouteInfo> routeInfos = Collections.singletonList(routeInfo);
+
         Mockito.when(cacheService.get(originCityInfo))
                 .thenReturn(Mono.empty());
 
         Mockito.when(routeRepository.findByOrigin(originCityInfo.getName(), originCityInfo.getCountry()))
-                .thenReturn(Optional.of(routeEntity));
+                .thenReturn(Optional.of(routeEntities));
 
-        Mockito.when(cacheService.upsert(originCityInfo, routeInfo))
-                .thenReturn(Mono.just(Pair.with(originCityInfo, routeInfo)));
+        Mockito.when(cacheService.upsert(originCityInfo, routeInfos))
+                .thenReturn(Mono.just(Pair.with(originCityInfo, routeInfos)));
 
         // when - then
         StepVerifier
                 .create(routeService.find(originCityInfo))
-                .expectNext(routeInfo)
+                .expectNext(routeInfos)
                 .verifyComplete();
 
-        Mockito.verify(cacheService).upsert(originCityInfo, routeInfo);
+        Mockito.verify(cacheService).upsert(originCityInfo, routeInfos);
     }
 
     @Test
@@ -131,13 +136,15 @@ public class RouteServiceTest {
                 departureTime,
                 arrivalTime);
 
+        List<RouteInfo> routeInfos = Collections.singletonList(routeInfo);
+
         Mockito.when(cacheService.get(originCityInfo))
-                .thenReturn(Mono.just(routeInfo));
+                .thenReturn(Mono.just(routeInfos));
 
         // when - then
         StepVerifier
                 .create(routeService.find(originCityInfo))
-                .expectNext(routeInfo)
+                .expectNext(routeInfos)
                 .verifyComplete();
 
         Mockito.verifyZeroInteractions(routeRepository);
@@ -235,6 +242,8 @@ public class RouteServiceTest {
                 departureTime,
                 arrivalTime);
 
+        List<RouteInfo> routeInfos = Collections.singletonList(routeInfo);
+
         RouteEntity routeEntity = new RouteEntity();
         routeEntity.setId(id);
         routeEntity.setOriginCityName(originCityInfo.getName());
@@ -258,7 +267,7 @@ public class RouteServiceTest {
                 .thenReturn(Mono.just(Pair.with(id, routeInfo)));
 
         Mockito.when(cacheService.upsert(originCityInfo, routeInfo))
-                .thenReturn(Mono.just(Pair.with(originCityInfo, routeInfo)));
+                .thenReturn(Mono.just(Pair.with(originCityInfo, routeInfos)));
 
         // when - then
         StepVerifier.create(routeService.update(id, routeInfo))

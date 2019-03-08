@@ -16,6 +16,8 @@ import org.springframework.data.redis.core.ValueOperations;
 import reactor.test.StepVerifier;
 
 import java.time.Instant;
+import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -25,11 +27,11 @@ import static org.mockito.Mockito.*;
 public class CacheServiceTest {
 
     @Mock
-    private RedisTemplate<CityInfo, RouteInfo> cityInfoToRouteInfo;
+    private RedisTemplate<CityInfo, List<RouteInfo>> cityInfoToRouteInfos;
     @Mock
-    private ValueOperations<CityInfo, RouteInfo> cityInfoToRouteInfoValueOps;
+    private ValueOperations<CityInfo, List<RouteInfo>> cityInfoToRouteInfosValueOps;
     @Mock
-    private RedisOperations<CityInfo, RouteInfo> cityInfoRouteInfoRedisOperations;
+    private RedisOperations<CityInfo, List<RouteInfo>> cityInfoRouteInfosRedisOperations;
 
     @Mock
     private RedisTemplate<String, RouteInfo> routeIdToRouteInfo;
@@ -53,7 +55,8 @@ public class CacheServiceTest {
     public void setUp() {
         MockitoAnnotations.initMocks(this);
 
-        cacheService = new CacheService(cityInfoToRouteInfo,
+        cacheService = new CacheService(
+                cityInfoToRouteInfos,
                 routeIdToRouteInfo,
                 cacheHitFindByCityInfo,
                 cacheMissFindByCityInfo,
@@ -127,15 +130,16 @@ public class CacheServiceTest {
         long timeToArrive = TimeUnit.SECONDS.convert(2, TimeUnit.HOURS);
         Instant arrivalTime = departureTime.plusSeconds(timeToArrive);
 
-        RouteInfo result = new RouteInfo(id, originCityInfo, destinyCityInfo, departureTime, arrivalTime);
+        RouteInfo routeInfo = new RouteInfo(id, originCityInfo, destinyCityInfo, departureTime, arrivalTime);
 
+        List<RouteInfo> result = Collections.singletonList(routeInfo);
 
         CityInfo cityInfo = new CityInfo("origin-name", "origin-country");
 
-        when(cityInfoToRouteInfo.opsForValue())
-                .thenReturn(cityInfoToRouteInfoValueOps);
+        when(cityInfoToRouteInfos.opsForValue())
+                .thenReturn(cityInfoToRouteInfosValueOps);
 
-        when(cityInfoToRouteInfoValueOps.get(cityInfo))
+        when(cityInfoToRouteInfosValueOps.get(cityInfo))
                 .thenReturn(result);
 
 
@@ -152,10 +156,10 @@ public class CacheServiceTest {
         // given
         CityInfo cityInfo = new CityInfo("origin-name", "origin-country");
 
-        when(cityInfoToRouteInfo.opsForValue())
-                .thenReturn(cityInfoToRouteInfoValueOps);
+        when(cityInfoToRouteInfos.opsForValue())
+                .thenReturn(cityInfoToRouteInfosValueOps);
 
-        when(cityInfoToRouteInfoValueOps.get(cityInfo))
+        when(cityInfoToRouteInfosValueOps.get(cityInfo))
                 .thenReturn(null);
 
         // when - then
@@ -170,13 +174,13 @@ public class CacheServiceTest {
         // given
         CityInfo cityInfo = new CityInfo("origin-name", "origin-country");
 
-        when(cityInfoToRouteInfo.opsForValue())
-                .thenReturn(cityInfoToRouteInfoValueOps);
+        when(cityInfoToRouteInfos.opsForValue())
+                .thenReturn(cityInfoToRouteInfosValueOps);
 
-        when(cityInfoToRouteInfoValueOps.getOperations())
-                .thenReturn(cityInfoRouteInfoRedisOperations);
+        when(cityInfoToRouteInfosValueOps.getOperations())
+                .thenReturn(cityInfoRouteInfosRedisOperations);
 
-        when(cityInfoRouteInfoRedisOperations.delete(cityInfo))
+        when(cityInfoRouteInfosRedisOperations.delete(cityInfo))
                 .thenReturn(true);
 
         // when - then
@@ -184,9 +188,9 @@ public class CacheServiceTest {
                 .expectNext(true)
                 .verifyComplete();
 
-        verify(cityInfoToRouteInfo, times(1)).opsForValue();
-        verify(cityInfoToRouteInfoValueOps, times(1)).getOperations();
-        verify(cityInfoRouteInfoRedisOperations, times(1)).delete(cityInfo);
+        verify(cityInfoToRouteInfos, times(1)).opsForValue();
+        verify(cityInfoToRouteInfosValueOps, times(1)).getOperations();
+        verify(cityInfoRouteInfosRedisOperations, times(1)).delete(cityInfo);
     }
 
     @Test
@@ -229,18 +233,19 @@ public class CacheServiceTest {
 
         RouteInfo routeInfo = new RouteInfo(null, originCityInfo, destinyCityInfo, departureTime, arrivalTime);
 
-        when(cityInfoToRouteInfo.opsForValue())
-                .thenReturn(cityInfoToRouteInfoValueOps);
+        when(cityInfoToRouteInfos.opsForValue())
+                .thenReturn(cityInfoToRouteInfosValueOps);
 
+        List<RouteInfo> routeInfos = Collections.singletonList(routeInfo);
 
         // when - then
-        Pair<CityInfo, RouteInfo> result = Pair.with(cityInfo, routeInfo);
+        Pair<CityInfo, List<RouteInfo>> result = Pair.with(cityInfo, routeInfos);
 
         StepVerifier.create(cacheService.upsert(cityInfo, routeInfo))
                 .expectNext(result)
                 .verifyComplete();
 
-        verify(cityInfoToRouteInfoValueOps).set(cityInfo, routeInfo);
+        verify(cityInfoToRouteInfosValueOps).set(cityInfo, routeInfos);
     }
 
     @Test

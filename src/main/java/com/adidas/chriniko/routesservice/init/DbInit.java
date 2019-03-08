@@ -1,8 +1,10 @@
 package com.adidas.chriniko.routesservice.init;
 
+import com.adidas.chriniko.routesservice.error.ProcessingException;
 import com.zaxxer.hikari.HikariDataSource;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.io.ClassPathResource;
@@ -23,6 +25,9 @@ public class DbInit {
     private final CitiesCsvProcessor citiesCsvProcessor;
     private final RouteGenerator routeGenerator;
 
+    @Value("${generate.routes}")
+    private boolean generateRoutes;
+
     @Autowired
     public DbInit(HikariDataSource dataSource, CitiesCsvProcessor citiesCsvProcessor, RouteGenerator routeGenerator) {
         this.dataSource = dataSource;
@@ -39,12 +44,14 @@ public class DbInit {
             // Note: setup table.
             ScriptUtils.executeSqlScript(connection, new ClassPathResource("sql/setup.sql"));
 
-            // Note: insert random info.
-            Map<String, List<String>> citiesByCountry = citiesCsvProcessor.getCitiesByCountry();
-            routeGenerator.generate(citiesByCountry);
+            if (generateRoutes) {
+                Map<String, List<String>> citiesByCountry = citiesCsvProcessor.getCitiesByCountry();
+                routeGenerator.generate(citiesByCountry);
+            }
 
         } catch (SQLException e) {
             log.error("error occurred during initialization of schema", e);
+            throw new ProcessingException(e);
         }
     }
 

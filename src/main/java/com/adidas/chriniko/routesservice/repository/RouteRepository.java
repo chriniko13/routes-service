@@ -4,7 +4,6 @@ import com.adidas.chriniko.routesservice.entity.RouteEntity;
 import org.springframework.stereotype.Repository;
 
 import javax.persistence.EntityManager;
-import javax.persistence.NoResultException;
 import javax.persistence.PersistenceContext;
 import javax.persistence.TypedQuery;
 import java.util.ArrayList;
@@ -21,13 +20,13 @@ public class RouteRepository {
     @PersistenceContext
     private EntityManager em;
 
-    public Optional<RouteEntity> findByOrigin(String originCityName, String originCountry) {
+    public Optional<List<RouteEntity>> findByOrigin(String originCityName, String originCountry) {
 
         TypedQuery<RouteEntity> tq = em.createNamedQuery("RouteEntity.findByOriginCityNameAndOriginCountry", RouteEntity.class);
         tq.setParameter("originCityName", originCityName);
         tq.setParameter("originCountry", originCountry);
 
-        return extract(tq);
+        return Optional.ofNullable(tq.getResultList());
     }
 
     public Optional<RouteEntity> find(String id) {
@@ -72,14 +71,6 @@ public class RouteRepository {
             return route;
         } else {
             return em.merge(route);
-        }
-    }
-
-    private Optional<RouteEntity> extract(TypedQuery<RouteEntity> tq) {
-        try {
-            return Optional.of(tq.getSingleResult());
-        } catch (NoResultException e) {
-            return Optional.empty();
         }
     }
 }
