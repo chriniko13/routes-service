@@ -119,20 +119,6 @@
             <artifactId>commons-csv</artifactId>
             <version>${commons-csv.version}</version>
         </dependency>
-
-        <dependency>
-            <groupId>com.googlecode.combinatoricslib</groupId>
-            <artifactId>combinatoricslib</artifactId>
-            <version>${combinatoricslib.version}</version>
-            <scope>compile</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-math3</artifactId>
-            <version>3.6.1</version>
-        </dependency>
-
         <!-- END: Dev Dependencies -->
 
 

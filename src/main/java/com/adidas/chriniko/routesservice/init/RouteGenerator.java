@@ -1,32 +1,28 @@
 package com.adidas.chriniko.routesservice.init;
 
 import com.adidas.chriniko.routesservice.entity.RouteEntity;
-import com.adidas.chriniko.routesservice.error.ProcessingException;
 import com.adidas.chriniko.routesservice.repository.RouteRepository;
 import lombok.extern.log4j.Log4j2;
-import org.paukov.combinatorics.Generator;
-import org.paukov.combinatorics.ICombinatoricsVector;
+import org.javatuples.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.TransactionCallbackWithoutResult;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import java.math.BigInteger;
+import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import static org.paukov.combinatorics.CombinatoricsFactory.createPermutationWithRepetitionGenerator;
-import static org.paukov.combinatorics.CombinatoricsFactory.createVector;
+import java.util.stream.Collectors;
 
 @Log4j2
 
 @Component
 public class RouteGenerator {
 
-    private static final int BATCH_SIZE = 25;
+    private static final boolean DISPLAY_STORING_INFO = true;
 
     private final RouteRepository routeRepository;
     private final TransactionTemplate transactionTemplate;
@@ -49,23 +45,16 @@ public class RouteGenerator {
                 .summaryStatistics();
 
         long averageCitiesPerCountry = (long) Math.ceil(summaryStatisticsCitiesSize.getAverage());
+        int maxCitiesPerCountry = summaryStatisticsCitiesSize.getMax();
+        int minCitiesPerCountry = summaryStatisticsCitiesSize.getMin();
+        long sumOfCities = summaryStatisticsCitiesSize.getSum();
 
-        /*
-            //TODO validate if is correct type...
-            Number of permutations (order matters) of n things taken r at a time:
-            P(n,r) = n! / (n-r)!
-         */
-        int p = 2; // (origin, destiny)
-        Long numberOfPerms = factorial(averageCitiesPerCountry).divide(factorial(averageCitiesPerCountry - p)).longValue();
-
-        long estimatedNumberOfRecordsInDbAfterExecution = totalCountries * numberOfPerms;
-
-        log.debug("totalCountries: {}, averageCitiesPerCountry: {}, estimatedNumberOfRecordsInDbAfterExecution: {}",
-                totalCountries, averageCitiesPerCountry, estimatedNumberOfRecordsInDbAfterExecution);
+        log.debug("totalCountries: {}, averageCitiesPerCountry: {}, maxCitiesPerCountry: {}, minCitiesPerCountry: {}, sumOfCities: {}",
+                totalCountries, averageCitiesPerCountry, maxCitiesPerCountry, minCitiesPerCountry, sumOfCities);
 
 
         // Note: calculate data.
-        final Random random = new Random();
+        final SecureRandom random = new SecureRandom();
 
         final Map<String, List<RouteEntity>> routesInfoByCountry = new LinkedHashMap<>();
 
@@ -74,43 +63,80 @@ public class RouteGenerator {
             String country = citiesByCountryRecord.getKey();
             List<String> cities = citiesByCountryRecord.getValue();
 
-            ICombinatoricsVector<String> vector = createVector(cities);
-
-            Generator<String> generator = createPermutationWithRepetitionGenerator(vector, 2 /* 2 == (origin, destiny) */);
-            List<ICombinatoricsVector<String>> generatedData = generator.generateAllObjects();
-
-            final List<RouteEntity> routes = new LinkedList<>();
-
-            for (ICombinatoricsVector<String> permutation : generatedData) {
-                String originCity = permutation.getValue(0);
-                String destinyCity = permutation.getValue(1);
-
-                Instant departureTime = Instant.now();
-
-                int hours = random.nextInt(12) + 1;
-
-                Instant arrivalTime = departureTime.plusSeconds(TimeUnit.SECONDS.convert(hours, TimeUnit.HOURS));
-
-                RouteEntity routeEntity = new RouteEntity(
-                        originCity,
-                        country,
-                        destinyCity,
-                        country,
-                        departureTime,
-                        arrivalTime
-                );
-
-                routes.add(routeEntity);
+            // We need at least two in order to create a route (a,b) for itinerary size of 1.
+            if (cities.size() == 1) {
+                continue;
             }
-            routesInfoByCountry.put(country, routes);
-            log.debug("just stored: {} ---> {}", country, generatedData);
+
+            //TODO generate more than one itineraries for selected root country...
+            int noOfItinerariesForSelectedRoot = 1;
+
+            List<RouteEntity> routes = new LinkedList<>();
+
+            for (int k = 1; k <= noOfItinerariesForSelectedRoot; k++) {
+
+                // first pick a random root city
+                int rootCityIdx = random.nextInt(cities.size());
+                String rootCity = cities.get(rootCityIdx);
+
+                // calculate size of itinerary, eg: a --> b --> c--> ... (size == 3)
+                int maxItinerarySize = cities.size() - 1; /* [city a, city b, city c] === [(a,b), (b,c)] === 2 records in db */
+                int itinerarySize = random.nextInt(maxItinerarySize) + 1;
+
+                // calculate next city idx and do the 'binding'
+                Set<Integer> alreadyPickedIdxs = new LinkedHashSet<>();
+                alreadyPickedIdxs.add(rootCityIdx);
+
+                String previousCity = rootCity;
+
+                for (int i = 1; i <= itinerarySize; i++) {
+
+                    int nextCityIdx;
+                    do {
+                        nextCityIdx = random.nextInt(cities.size());
+                    } while (alreadyPickedIdxs.contains(nextCityIdx));
+
+                    alreadyPickedIdxs.add(nextCityIdx);
+
+                    String nextCity = cities.get(nextCityIdx);
+
+                    Instant departureTime = Instant.now();
+                    Instant arrivalTime = departureTime.plusSeconds(TimeUnit.SECONDS.convert(random.nextInt(4) + 1, TimeUnit.HOURS));
+
+                    RouteEntity route = new RouteEntity(
+                            previousCity,
+                            country,
+                            nextCity,
+                            country,
+                            departureTime,
+                            arrivalTime
+                    );
+
+                    routes.add(route);
+                    previousCity = nextCity;
+                }
+
+                routesInfoByCountry.put(country, routes);
+
+                if (DISPLAY_STORING_INFO) {
+                    List<Pair<String, String>> routesForPrinting = routes
+                            .stream()
+                            .map(r -> Pair.with(r.getOriginCityName(), r.getDestinyCityName()))
+                            .collect(Collectors.toList());
+
+                    log.debug("just stored: {} ---> {}", country, routesForPrinting);
+                }
+            }
         }
+
 
         // Note: save data.
         int accurateNumberOfRecordsInDbAfterExecution = routesInfoByCountry.values().stream().mapToInt(Collection::size).sum();
         log.debug("accurateNumberOfRecordsInDbAfterExecution: {}", accurateNumberOfRecordsInDbAfterExecution);
 
         int workers = routesInfoByCountry.size();
+        log.debug("total db workers: {}", workers);
+
         ExecutorService workersPool = Executors.newFixedThreadPool(routesInfoByCountry.size(), new ThreadFactory() {
             private final AtomicInteger id = new AtomicInteger(0);
 
@@ -127,45 +153,27 @@ public class RouteGenerator {
         for (Map.Entry<String, List<RouteEntity>> routeInfoRecord : routesInfoByCountry.entrySet()) {
 
             workersPool.submit(() -> {
-
                 List<RouteEntity> routes = routeInfoRecord.getValue();
                 store(routes);
 
                 countDownLatch.countDown();
             });
-
         }
 
         try {
             countDownLatch.await();
         } catch (InterruptedException ignored) {
         }
-
         workersPool.shutdown();
     }
 
-    //TODO optimize batch insert...
-    private void store(List<RouteEntity> batchSave) {
+    private void store(List<RouteEntity> routes) {
         transactionTemplate.execute(new TransactionCallbackWithoutResult() {
             @Override
             protected void doInTransactionWithoutResult(TransactionStatus status) {
-                batchSave.forEach(routeRepository::insert);
+                routeRepository.batchInsert(routes);
             }
         });
-    }
-
-    private static BigInteger factorial(long number) {
-        return factorial(BigInteger.valueOf(number));
-    }
-
-    private static BigInteger factorial(BigInteger number) {
-        BigInteger result = BigInteger.valueOf(1);
-
-        for (long factor = 2; factor <= number.longValue(); factor++) {
-            result = result.multiply(BigInteger.valueOf(factor));
-        }
-
-        return result;
     }
 
 }
