@@ -20,7 +20,9 @@ import java.util.stream.Collectors;
 @Component
 public class RouteDataGenerator {
 
-    private static final int NO_OF_ITINERARIES_FOR_SELECTED_ROOT_CITY = 4;
+
+    @Value("${route-data-generator.no-of-itineraries-for-selected-root-city}")
+    private int noOfItinerariesForSelectedRootCity;
 
     @Value("${route-data-generator.display-storing-info}")
     private boolean displayStoringInfo;
@@ -35,7 +37,7 @@ public class RouteDataGenerator {
 
         RouteDataGeneratorResult result = new RouteDataGeneratorResult();
 
-        ExecutorService routeGeneratorWorkers = Executors.newFixedThreadPool(NO_OF_ITINERARIES_FOR_SELECTED_ROOT_CITY, new ThreadFactory() {
+        ExecutorService routeGeneratorWorkers = Executors.newFixedThreadPool(noOfItinerariesForSelectedRootCity, new ThreadFactory() {
             private final AtomicInteger id = new AtomicInteger(0);
 
             @Override
@@ -63,11 +65,11 @@ public class RouteDataGenerator {
             final int rootCityIdx = random.nextInt(cities.size());
             final String rootCity = cities.get(rootCityIdx);
 
-            final List<List<RouteEntity>> itineraries = Collections.synchronizedList(new ArrayList<>(NO_OF_ITINERARIES_FOR_SELECTED_ROOT_CITY));
+            final List<List<RouteEntity>> itineraries = Collections.synchronizedList(new ArrayList<>(noOfItinerariesForSelectedRootCity));
 
-            final CountDownLatch rendezvous = new CountDownLatch(NO_OF_ITINERARIES_FOR_SELECTED_ROOT_CITY);
+            final CountDownLatch rendezvous = new CountDownLatch(noOfItinerariesForSelectedRootCity);
 
-            for (int k = 1; k <= NO_OF_ITINERARIES_FOR_SELECTED_ROOT_CITY; k++) {
+            for (int k = 1; k <= noOfItinerariesForSelectedRootCity; k++) {
 
                 routeGeneratorWorkers.submit(() -> {
 
@@ -80,6 +82,7 @@ public class RouteDataGenerator {
                     alreadyPickedIdxs.add(rootCityIdx);
 
                     String previousCity = rootCity;
+                    Instant previousArrivalTime = Instant.now();
 
                     List<RouteEntity> routes = new ArrayList<>(itinerarySize);
 
@@ -93,9 +96,10 @@ public class RouteDataGenerator {
 
                         String nextCity = cities.get(nextCityIdx);
 
-                        //TODO keep previous time in order to create more realistic times...
-                        Instant departureTime = Instant.now();
+                        Instant departureTime = previousArrivalTime;
                         Instant arrivalTime = departureTime.plusSeconds(TimeUnit.SECONDS.convert(random.nextInt(4) + 1, TimeUnit.HOURS));
+
+                        previousArrivalTime = arrivalTime;
 
                         RouteEntity route = new RouteEntity(
                                 previousCity,
