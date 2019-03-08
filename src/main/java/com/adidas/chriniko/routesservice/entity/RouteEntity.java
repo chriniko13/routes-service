@@ -6,7 +6,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import javax.persistence.*;
 import java.time.Instant;
 
-@EqualsAndHashCode(callSuper = false, of = {"originCityName", "originCountry", "destinyCityName", "destinyCountry"})
+@EqualsAndHashCode(callSuper = false)
 @Data
 @ToString(callSuper = true)
 @NoArgsConstructor
@@ -36,7 +36,6 @@ public class RouteEntity extends BaseEntity {
     private String destinyCountry;
 
     private Instant departureTime;
-
     private Instant arrivalTime;
 
 }

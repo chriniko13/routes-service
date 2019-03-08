@@ -24,6 +24,9 @@ public class RouteGenerator {
 
     private static final boolean DISPLAY_STORING_INFO = false;
 
+    private static final int NO_OF_ITINERARIES_FOR_SELECTED_ROOT_CITY = 3;
+
+
     private final RouteRepository routeRepository;
     private final TransactionTemplate transactionTemplate;
 
@@ -39,7 +42,7 @@ public class RouteGenerator {
         // Note: calculate data.
         final SecureRandom random = new SecureRandom();
 
-        final Map<String, List<RouteEntity>> routesInfoByCountry = new LinkedHashMap<>();
+        final Map<String, List<List<RouteEntity>>> itinerariesInfoByCountry = new LinkedHashMap<>();
 
         int countriesWithOnlyOneCity = 0;
 
@@ -54,16 +57,13 @@ public class RouteGenerator {
                 continue;
             }
 
-            //TODO generate more than one itineraries for selected root country...
-            int noOfItinerariesForSelectedRoot = 1;
+            // first pick a random root city
+            int rootCityIdx = random.nextInt(cities.size());
+            String rootCity = cities.get(rootCityIdx);
 
-            List<RouteEntity> routes = new LinkedList<>();
+            List<List<RouteEntity>> itineraries = new ArrayList<>(NO_OF_ITINERARIES_FOR_SELECTED_ROOT_CITY);
 
-            for (int k = 1; k <= noOfItinerariesForSelectedRoot; k++) {
-
-                // first pick a random root city
-                int rootCityIdx = random.nextInt(cities.size());
-                String rootCity = cities.get(rootCityIdx);
+            for (int k = 1; k <= NO_OF_ITINERARIES_FOR_SELECTED_ROOT_CITY; k++) {
 
                 // calculate size of itinerary, eg: a --> b --> c--> ... (size == 3)
                 int maxItinerarySize = cities.size() - 1; /* [city a, city b, city c] === [(a,b), (b,c)] === 2 records in db */
@@ -75,8 +75,9 @@ public class RouteGenerator {
 
                 String previousCity = rootCity;
 
-                for (int i = 1; i <= itinerarySize; i++) {
+                List<RouteEntity> routes = new ArrayList<>(itinerarySize);
 
+                for (int i = 1; i <= itinerarySize; i++) {
                     int nextCityIdx;
                     do {
                         nextCityIdx = random.nextInt(cities.size());
@@ -102,14 +103,15 @@ public class RouteGenerator {
                     previousCity = nextCity;
                 }
 
+                itineraries.add(routes);
+
                 log(country, routes);
             }
 
-            routesInfoByCountry.put(country, routes);
+            itinerariesInfoByCountry.put(country, itineraries);
         }
 
-
-        saveData(routesInfoByCountry, countriesWithOnlyOneCity);
+        saveData(itinerariesInfoByCountry, countriesWithOnlyOneCity);
     }
 
     private void displayDataSizeInfo(Map<String, List<String>> citiesByCountry) {
@@ -130,16 +132,21 @@ public class RouteGenerator {
                 totalCountries, averageCitiesPerCountry, maxCitiesPerCountry, minCitiesPerCountry, sumOfCities);
     }
 
-    private void saveData(Map<String, List<RouteEntity>> routesInfoByCountry, int countriesWithOnlyOneCity) {
+    private void saveData(Map<String, List<List<RouteEntity>>> itinerariesInfoByCountry, int countriesWithOnlyOneCity) {
         log.debug("countries with only one city: {}", countriesWithOnlyOneCity);
 
-        int accurateNumberOfRecordsInDbAfterExecution = routesInfoByCountry.values().stream().mapToInt(Collection::size).sum();
+        int accurateNumberOfRecordsInDbAfterExecution = itinerariesInfoByCountry
+                .values()
+                .stream()
+                .flatMap(Collection::stream)
+                .mapToInt(Collection::size).sum();
+
         log.debug("accurateNumberOfRecordsInDbAfterExecution: {}", accurateNumberOfRecordsInDbAfterExecution);
 
-        int workers = routesInfoByCountry.size();
+        int workers = itinerariesInfoByCountry.size();
         log.debug("total db workers: {}", workers);
 
-        ExecutorService workersPool = Executors.newFixedThreadPool(routesInfoByCountry.size(), new ThreadFactory() {
+        ExecutorService workersPool = Executors.newFixedThreadPool(itinerariesInfoByCountry.size(), new ThreadFactory() {
             private final AtomicInteger id = new AtomicInteger(0);
 
             @Override
@@ -152,10 +159,12 @@ public class RouteGenerator {
 
         final CountDownLatch countDownLatch = new CountDownLatch(workers);
 
-        for (Map.Entry<String, List<RouteEntity>> routeInfoRecord : routesInfoByCountry.entrySet()) {
+        for (Map.Entry<String, List<List<RouteEntity>>> itineraryInfoRecord : itinerariesInfoByCountry.entrySet()) {
 
             workersPool.submit(() -> {
-                List<RouteEntity> routes = routeInfoRecord.getValue();
+
+                List<List<RouteEntity>> itineraries = itineraryInfoRecord.getValue();
+                List<RouteEntity> routes = itineraries.stream().flatMap(Collection::stream).collect(Collectors.toList());
                 store(routes);
 
                 countDownLatch.countDown();
