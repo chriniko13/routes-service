@@ -159,7 +159,7 @@ public class RouteService {
                 .<RouteEntity>create(sink -> {
                     try {
                         RouteEntity result = routeRepository
-                                .find(cityInfo.getName(), cityInfo.getCountry())
+                                .findByOrigin(cityInfo.getName(), cityInfo.getCountry())
                                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "no record exists with: " + cityInfo));
 
                         sink.success(result);

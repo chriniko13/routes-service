@@ -75,7 +75,7 @@ public class RouteServiceTest {
         Mockito.when(cacheService.get(originCityInfo))
                 .thenReturn(Mono.empty());
 
-        Mockito.when(routeRepository.find(originCityInfo.getName(), originCityInfo.getCountry()))
+        Mockito.when(routeRepository.findByOrigin(originCityInfo.getName(), originCityInfo.getCountry()))
                 .thenReturn(Optional.of(routeEntity));
 
         Mockito.when(cacheService.upsert(originCityInfo, routeInfo))
@@ -101,7 +101,7 @@ public class RouteServiceTest {
         Mockito.when(cacheService.get(originCityInfo))
                 .thenReturn(Mono.empty());
 
-        Mockito.when(routeRepository.find(originCityInfo.getName(), originCityInfo.getCountry()))
+        Mockito.when(routeRepository.findByOrigin(originCityInfo.getName(), originCityInfo.getCountry()))
                 .thenReturn(Optional.empty());
 
 

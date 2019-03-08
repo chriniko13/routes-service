@@ -65,6 +65,33 @@
 * See redis contents from here: `http://localhost:8081`
 
 
+#### How to find root(starting city) of itineraries for a specific country
+* Execute:
+
+```mysql
+select origin_city_name, origin_country
+from routes
+where origin_city_name NOT IN (
+  select destiny_city_name
+  from routes
+  where destiny_country = 'Spain'
+)
+and origin_country = 'Spain';
+```
+
+
+#### How to find root(starting city) of itineraties for all countries
+* Execute:
+```mysql
+select origin_city_name, origin_country
+from routes
+where origin_city_name NOT IN (
+  select destiny_city_name
+  from routes
+  where destiny_country = origin_country
+);
+```
+
 #### Useful Docker Commands
 
 * `docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' <container_id>`

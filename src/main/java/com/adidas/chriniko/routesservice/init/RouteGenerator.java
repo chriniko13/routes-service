@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 @Component
 public class RouteGenerator {
 
-    private static final boolean DISPLAY_STORING_INFO = true;
+    private static final boolean DISPLAY_STORING_INFO = false;
 
     private final RouteRepository routeRepository;
     private final TransactionTemplate transactionTemplate;
@@ -34,29 +34,14 @@ public class RouteGenerator {
     }
 
     public void generate(Map<String, List<String>> citiesByCountry) {
-
-        // Note: display data info size.
-        int totalCountries = citiesByCountry.size();
-
-        IntSummaryStatistics summaryStatisticsCitiesSize = citiesByCountry
-                .values()
-                .stream()
-                .mapToInt(List::size)
-                .summaryStatistics();
-
-        long averageCitiesPerCountry = (long) Math.ceil(summaryStatisticsCitiesSize.getAverage());
-        int maxCitiesPerCountry = summaryStatisticsCitiesSize.getMax();
-        int minCitiesPerCountry = summaryStatisticsCitiesSize.getMin();
-        long sumOfCities = summaryStatisticsCitiesSize.getSum();
-
-        log.debug("totalCountries: {}, averageCitiesPerCountry: {}, maxCitiesPerCountry: {}, minCitiesPerCountry: {}, sumOfCities: {}",
-                totalCountries, averageCitiesPerCountry, maxCitiesPerCountry, minCitiesPerCountry, sumOfCities);
-
+        displayDataSizeInfo(citiesByCountry);
 
         // Note: calculate data.
         final SecureRandom random = new SecureRandom();
 
         final Map<String, List<RouteEntity>> routesInfoByCountry = new LinkedHashMap<>();
+
+        int countriesWithOnlyOneCity = 0;
 
         for (Map.Entry<String, List<String>> citiesByCountryRecord : citiesByCountry.entrySet()) {
 
@@ -65,6 +50,7 @@ public class RouteGenerator {
 
             // We need at least two in order to create a route (a,b) for itinerary size of 1.
             if (cities.size() == 1) {
+                countriesWithOnlyOneCity++;
                 continue;
             }
 
@@ -116,21 +102,37 @@ public class RouteGenerator {
                     previousCity = nextCity;
                 }
 
-                routesInfoByCountry.put(country, routes);
-
-                if (DISPLAY_STORING_INFO) {
-                    List<Pair<String, String>> routesForPrinting = routes
-                            .stream()
-                            .map(r -> Pair.with(r.getOriginCityName(), r.getDestinyCityName()))
-                            .collect(Collectors.toList());
-
-                    log.debug("just stored: {} ---> {}", country, routesForPrinting);
-                }
+                log(country, routes);
             }
+
+            routesInfoByCountry.put(country, routes);
         }
 
 
-        // Note: save data.
+        saveData(routesInfoByCountry, countriesWithOnlyOneCity);
+    }
+
+    private void displayDataSizeInfo(Map<String, List<String>> citiesByCountry) {
+        int totalCountries = citiesByCountry.size();
+
+        IntSummaryStatistics summaryStatisticsCitiesSize = citiesByCountry
+                .values()
+                .stream()
+                .mapToInt(List::size)
+                .summaryStatistics();
+
+        long averageCitiesPerCountry = (long) Math.ceil(summaryStatisticsCitiesSize.getAverage());
+        int maxCitiesPerCountry = summaryStatisticsCitiesSize.getMax();
+        int minCitiesPerCountry = summaryStatisticsCitiesSize.getMin();
+        long sumOfCities = summaryStatisticsCitiesSize.getSum();
+
+        log.debug("totalCountries: {}, averageCitiesPerCountry: {}, maxCitiesPerCountry: {}, minCitiesPerCountry: {}, sumOfCities: {}",
+                totalCountries, averageCitiesPerCountry, maxCitiesPerCountry, minCitiesPerCountry, sumOfCities);
+    }
+
+    private void saveData(Map<String, List<RouteEntity>> routesInfoByCountry, int countriesWithOnlyOneCity) {
+        log.debug("countries with only one city: {}", countriesWithOnlyOneCity);
+
         int accurateNumberOfRecordsInDbAfterExecution = routesInfoByCountry.values().stream().mapToInt(Collection::size).sum();
         log.debug("accurateNumberOfRecordsInDbAfterExecution: {}", accurateNumberOfRecordsInDbAfterExecution);
 
@@ -174,6 +176,17 @@ public class RouteGenerator {
                 routeRepository.batchInsert(routes);
             }
         });
+    }
+
+    private void log(String country, List<RouteEntity> routes) {
+        if (DISPLAY_STORING_INFO) {
+            List<Pair<String, String>> routesForPrinting = routes
+                    .stream()
+                    .map(r -> Pair.with(r.getOriginCityName(), r.getDestinyCityName()))
+                    .collect(Collectors.toList());
+
+            log.debug("just stored: {} ---> {}", country, routesForPrinting);
+        }
     }
 
 }

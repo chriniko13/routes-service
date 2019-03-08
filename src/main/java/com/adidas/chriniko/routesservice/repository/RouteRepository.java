@@ -21,7 +21,7 @@ public class RouteRepository {
     @PersistenceContext
     private EntityManager em;
 
-    public Optional<RouteEntity> find(String originCityName, String originCountry) {
+    public Optional<RouteEntity> findByOrigin(String originCityName, String originCountry) {
 
         TypedQuery<RouteEntity> tq = em.createNamedQuery("RouteEntity.findByOriginCityNameAndOriginCountry", RouteEntity.class);
         tq.setParameter("originCityName", originCityName);
@@ -32,10 +32,6 @@ public class RouteRepository {
 
     public Optional<RouteEntity> find(String id) {
         return Optional.ofNullable(em.find(RouteEntity.class, id));
-    }
-
-    public void deleteAll() {
-        em.createQuery("DELETE FROM RouteEntity").executeUpdate();
     }
 
     public void insert(RouteEntity routeEntity) {
