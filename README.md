@@ -69,7 +69,7 @@
 * Execute:
 
 ```mysql
-select origin_city_name, origin_country
+select origin_city_name, origin_country, destiny_city_name, destiny_country, departure_time, arrival_time
 from routes
 where origin_city_name NOT IN (
   select destiny_city_name
@@ -83,13 +83,39 @@ and origin_country = 'Spain';
 #### How to find root(starting city) of itineraties for all countries
 * Execute:
 ```mysql
-select origin_city_name, origin_country
+select origin_city_name, origin_country, destiny_city_name, destiny_country, departure_time, arrival_time
 from routes
 where origin_city_name NOT IN (
   select destiny_city_name
   from routes
   where destiny_country = origin_country
 );
+```
+
+
+#### How to find terminal routes (appear only as destiny city and not also as origin city)
+* Execute:
+```mysql
+select origin_city_name, origin_country, destiny_city_name, destiny_country, departure_time, arrival_time
+from routes
+where destiny_city_name NOT IN (
+  select origin_city_name
+  from routes
+  where origin_country = 'Greece'
+) and origin_country = 'Greece';
+```
+
+
+#### How to find intermediary routes (appear as destiny city and also as origin city)
+* Execute:
+```mysql
+select origin_city_name, origin_country, destiny_city_name, destiny_country, departure_time, arrival_time
+from routes
+where destiny_city_name IN (
+  select origin_city_name
+  from routes
+  where origin_country = 'Greece'
+) and origin_country = 'Greece';
 ```
 
 
