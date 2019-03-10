@@ -1,7 +1,6 @@
 package com.adidas.chriniko.routesservice.init;
 
 import com.adidas.chriniko.routesservice.entity.RouteEntity;
-import com.adidas.chriniko.routesservice.error.ProcessingException;
 import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 import org.javatuples.Pair;
@@ -11,8 +10,7 @@ import org.springframework.stereotype.Component;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Log4j2
@@ -37,17 +35,6 @@ public class RouteDataGenerator {
 
         RouteDataGeneratorResult result = new RouteDataGeneratorResult();
 
-        ExecutorService routeGeneratorWorkers = Executors.newFixedThreadPool(noOfItinerariesForSelectedRootCity, new ThreadFactory() {
-            private final AtomicInteger id = new AtomicInteger(0);
-
-            @Override
-            public Thread newThread(Runnable runnable) {
-                Thread t = new Thread(runnable);
-                t.setName("route-generator-worker-" + id.incrementAndGet());
-                return t;
-            }
-        });
-
         final SecureRandom random = new SecureRandom();
 
         for (Map.Entry<String, List<String>> citiesByCountryRecord : citiesByCountry.entrySet()) {
@@ -65,73 +52,60 @@ public class RouteDataGenerator {
             final int rootCityIdx = random.nextInt(cities.size());
             final String rootCity = cities.get(rootCityIdx);
 
-            final List<List<RouteEntity>> itineraries = Collections.synchronizedList(new ArrayList<>(noOfItinerariesForSelectedRootCity));
-
-            final CountDownLatch rendezvous = new CountDownLatch(noOfItinerariesForSelectedRootCity);
+            final List<List<RouteEntity>> itineraries = new ArrayList<>(noOfItinerariesForSelectedRootCity);
 
             for (int k = 1; k <= noOfItinerariesForSelectedRootCity; k++) {
 
-                routeGeneratorWorkers.submit(() -> {
+                // calculate size of itinerary, eg: a --> b --> c--> ... (size == 3)
+                int maxItinerarySize = cities.size() - 1; /* [city a, city b, city c] === [(a,b), (b,c)] === 2 records in db */
+                int itinerarySize = random.nextInt(maxItinerarySize) + 1;
 
-                    // calculate size of itinerary, eg: a --> b --> c--> ... (size == 3)
-                    int maxItinerarySize = cities.size() - 1; /* [city a, city b, city c] === [(a,b), (b,c)] === 2 records in db */
-                    int itinerarySize = random.nextInt(maxItinerarySize) + 1;
+                // calculate next city idx and do the 'binding'
+                Set<Integer> alreadyPickedIdxs = new LinkedHashSet<>();
+                alreadyPickedIdxs.add(rootCityIdx);
 
-                    // calculate next city idx and do the 'binding'
-                    Set<Integer> alreadyPickedIdxs = new LinkedHashSet<>();
-                    alreadyPickedIdxs.add(rootCityIdx);
+                String previousCity = rootCity;
+                Instant previousArrivalTime = Instant.now();
 
-                    String previousCity = rootCity;
-                    Instant previousArrivalTime = Instant.now();
+                List<RouteEntity> routes = new ArrayList<>(itinerarySize);
 
-                    List<RouteEntity> routes = new ArrayList<>(itinerarySize);
+                for (int i = 1; i <= itinerarySize; i++) {
+                    int nextCityIdx;
+                    do {
+                        nextCityIdx = random.nextInt(cities.size());
+                    } while (alreadyPickedIdxs.contains(nextCityIdx));
 
-                    for (int i = 1; i <= itinerarySize; i++) {
-                        int nextCityIdx;
-                        do {
-                            nextCityIdx = random.nextInt(cities.size());
-                        } while (alreadyPickedIdxs.contains(nextCityIdx));
+                    alreadyPickedIdxs.add(nextCityIdx);
 
-                        alreadyPickedIdxs.add(nextCityIdx);
+                    String nextCity = cities.get(nextCityIdx);
 
-                        String nextCity = cities.get(nextCityIdx);
+                    Instant departureTime = previousArrivalTime;
+                    Instant arrivalTime = departureTime.plusSeconds(TimeUnit.SECONDS.convert(random.nextInt(4) + 1, TimeUnit.HOURS));
 
-                        Instant departureTime = previousArrivalTime;
-                        Instant arrivalTime = departureTime.plusSeconds(TimeUnit.SECONDS.convert(random.nextInt(4) + 1, TimeUnit.HOURS));
+                    previousArrivalTime = arrivalTime;
 
-                        previousArrivalTime = arrivalTime;
+                    RouteEntity route = new RouteEntity(
+                            previousCity,
+                            country,
+                            nextCity,
+                            country,
+                            departureTime,
+                            arrivalTime
+                    );
 
-                        RouteEntity route = new RouteEntity(
-                                previousCity,
-                                country,
-                                nextCity,
-                                country,
-                                departureTime,
-                                arrivalTime
-                        );
+                    routes.add(route);
+                    previousCity = nextCity;
+                }
 
-                        routes.add(route);
-                        previousCity = nextCity;
-                    }
+                itineraries.add(routes);
 
-                    itineraries.add(routes);
+                log(country, routes);
 
-                    log(country, routes);
 
-                    rendezvous.countDown();
-                });
             }
-
-            try {
-                rendezvous.await();
-            } catch (InterruptedException e) {
-                throw new ProcessingException(e);
-            }
-
             result.itinerariesInfoByCountry.put(country, itineraries);
         }
 
-        routeGeneratorWorkers.shutdown();
 
         return result;
     }
