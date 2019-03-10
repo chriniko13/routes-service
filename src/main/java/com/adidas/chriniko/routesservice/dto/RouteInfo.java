@@ -1,6 +1,5 @@
 package com.adidas.chriniko.routesservice.dto;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -17,9 +16,6 @@ public class RouteInfo {
     private CityInfo city;
     private CityInfo destinyCity;
 
-    @JsonFormat(pattern = "yyyy-MM-dd@HH:mm:ss", timezone = "UTC")
     private Instant departureTime;
-
-    @JsonFormat(pattern = "yyyy-MM-dd@HH:mm:ss", timezone = "UTC")
     private Instant arrivalTime;
 }

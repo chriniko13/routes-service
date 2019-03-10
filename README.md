@@ -137,7 +137,7 @@ where destiny_city_name IN (
   
   ```json
     {
-    	"name":"Santander",
+    	"name":"Guadalajara",
     	"country":"Spain"
     }
 
@@ -148,56 +148,43 @@ where destiny_city_name IN (
     {
         "results": [
             {
-                "id": "1c4173b8-9569-44ef-9689-925f4b0e060f",
+                "id": "059534e9-fdbb-432f-ba0e-e500428192c9",
                 "city": {
-                    "name": "Santander",
+                    "name": "Guadalajara",
                     "country": "Spain"
                 },
                 "destinyCity": {
-                    "name": "Pamplona",
+                    "name": "Madrid",
                     "country": "Spain"
                 },
-                "departureTime": "2019-03-08@18:28:00",
-                "arrivalTime": "2019-03-08@22:28:00"
+                "departureTime": "2019-03-10T13:39:53Z",
+                "arrivalTime": "2019-03-10T15:39:53Z"
             },
             {
-                "id": "4dd8d64d-8b19-4427-b463-72b2f8cc0dd3",
+                "id": "5b68748b-b767-420b-803d-51b31360ed1b",
                 "city": {
-                    "name": "Santander",
+                    "name": "Guadalajara",
                     "country": "Spain"
                 },
                 "destinyCity": {
-                    "name": "Lorca",
+                    "name": "Marbella",
                     "country": "Spain"
                 },
-                "departureTime": "2019-03-08@18:28:00",
-                "arrivalTime": "2019-03-08@20:28:00"
+                "departureTime": "2019-03-10T13:39:53Z",
+                "arrivalTime": "2019-03-10T15:39:53Z"
             },
             {
-                "id": "e66fd07a-081d-4d36-b9a1-ed403bed122f",
+                "id": "b92e0f72-131e-4848-8d1c-67bd2c2c47ab",
                 "city": {
-                    "name": "Santander",
+                    "name": "Guadalajara",
                     "country": "Spain"
                 },
                 "destinyCity": {
-                    "name": "Oviedo",
+                    "name": "Vitoria",
                     "country": "Spain"
                 },
-                "departureTime": "2019-03-08@18:28:00",
-                "arrivalTime": "2019-03-08@19:28:00"
-            },
-            {
-                "id": "ed778e07-5ace-4f0f-a244-202a0985c301",
-                "city": {
-                    "name": "Santander",
-                    "country": "Spain"
-                },
-                "destinyCity": {
-                    "name": "Vigo",
-                    "country": "Spain"
-                },
-                "departureTime": "2019-03-08@18:28:00",
-                "arrivalTime": "2019-03-08@19:28:00"
+                "departureTime": "2019-03-10T13:39:53Z",
+                "arrivalTime": "2019-03-10T16:39:53Z"
             }
         ]
     }

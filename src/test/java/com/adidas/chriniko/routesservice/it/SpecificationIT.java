@@ -1,7 +1,6 @@
 package com.adidas.chriniko.routesservice.it;
 
 
-import com.adidas.chriniko.routesservice.Chrono;
 import com.adidas.chriniko.routesservice.RoutesServiceApplication;
 import com.adidas.chriniko.routesservice.dto.CityInfo;
 import com.adidas.chriniko.routesservice.dto.RouteInfo;
@@ -21,6 +20,7 @@ import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -86,8 +86,8 @@ public class SpecificationIT {
         assertEquals("destiny city", resultFromCreateNewRouteInfo.getDestinyCity().getName());
         assertEquals("destiny country", resultFromCreateNewRouteInfo.getDestinyCity().getCountry());
 
-        assertEquals(Chrono.map(departureTime), Chrono.map(resultFromCreateNewRouteInfo.getDepartureTime()));
-        assertEquals(Chrono.map(arrivalTime), Chrono.map(resultFromCreateNewRouteInfo.getArrivalTime()));
+        assertEquals(departureTime.truncatedTo(ChronoUnit.MINUTES), resultFromCreateNewRouteInfo.getDepartureTime().truncatedTo(ChronoUnit.MINUTES));
+        assertEquals(arrivalTime.truncatedTo(ChronoUnit.MINUTES), resultFromCreateNewRouteInfo.getArrivalTime().truncatedTo(ChronoUnit.MINUTES));
 
         Awaitility.await()
                 .atMost(10, TimeUnit.SECONDS)
@@ -116,8 +116,8 @@ public class SpecificationIT {
         assertEquals("destiny city", resultFindByCityInfo.getDestinyCity().getName());
         assertEquals("destiny country", resultFindByCityInfo.getDestinyCity().getCountry());
 
-        assertEquals(Chrono.map(departureTime), Chrono.map(resultFindByCityInfo.getDepartureTime()));
-        assertEquals(Chrono.map(arrivalTime), Chrono.map(resultFindByCityInfo.getArrivalTime()));
+        assertEquals(departureTime.truncatedTo(ChronoUnit.MINUTES), resultFindByCityInfo.getDepartureTime().truncatedTo(ChronoUnit.MINUTES));
+        assertEquals(arrivalTime.truncatedTo(ChronoUnit.MINUTES), resultFindByCityInfo.getArrivalTime().truncatedTo(ChronoUnit.MINUTES));
 
 
         Awaitility.await().atMost(10, TimeUnit.SECONDS)
@@ -146,8 +146,8 @@ public class SpecificationIT {
         assertEquals("destiny city", resultFindByRouteId.getDestinyCity().getName());
         assertEquals("destiny country", resultFindByRouteId.getDestinyCity().getCountry());
 
-        assertEquals(Chrono.map(departureTime), Chrono.map(resultFindByRouteId.getDepartureTime()));
-        assertEquals(Chrono.map(arrivalTime), Chrono.map(resultFindByRouteId.getArrivalTime()));
+        assertEquals(departureTime.truncatedTo(ChronoUnit.MINUTES), resultFindByRouteId.getDepartureTime().truncatedTo(ChronoUnit.MINUTES));
+        assertEquals(arrivalTime.truncatedTo(ChronoUnit.MINUTES), resultFindByRouteId.getArrivalTime().truncatedTo(ChronoUnit.MINUTES));
 
         Awaitility.await().atMost(10, TimeUnit.SECONDS)
                 .untilAsserted(() -> {
@@ -196,8 +196,8 @@ public class SpecificationIT {
         assertEquals(resultFindByRouteId.getDestinyCity().getName(), resultUpdate.getDestinyCity().getName());
         assertEquals(resultFindByRouteId.getDestinyCity().getCountry(), resultUpdate.getDestinyCity().getCountry());
 
-        assertEquals(Chrono.map(resultFindByRouteId.getDepartureTime()), Chrono.map(resultUpdate.getDepartureTime()));
-        assertEquals(Chrono.map(resultFindByRouteId.getArrivalTime()), Chrono.map(resultUpdate.getArrivalTime()));
+        assertEquals(resultFindByRouteId.getDepartureTime().truncatedTo(ChronoUnit.MINUTES), resultUpdate.getDepartureTime().truncatedTo(ChronoUnit.MINUTES));
+        assertEquals(resultFindByRouteId.getArrivalTime().truncatedTo(ChronoUnit.MINUTES), resultUpdate.getArrivalTime().truncatedTo(ChronoUnit.MINUTES));
 
 
         Awaitility.await()
@@ -240,8 +240,8 @@ public class SpecificationIT {
         assertEquals(resultUpdate.getDestinyCity().getName(), resultDelete.getDestinyCity().getName());
         assertEquals(resultUpdate.getDestinyCity().getCountry(), resultDelete.getDestinyCity().getCountry());
 
-        assertEquals(Chrono.map(resultUpdate.getDepartureTime()), Chrono.map(resultDelete.getDepartureTime()));
-        assertEquals(Chrono.map(resultUpdate.getArrivalTime()), Chrono.map(resultDelete.getArrivalTime()));
+        assertEquals(resultUpdate.getDepartureTime().truncatedTo(ChronoUnit.MINUTES), resultDelete.getDepartureTime().truncatedTo(ChronoUnit.MINUTES));
+        assertEquals(resultUpdate.getArrivalTime().truncatedTo(ChronoUnit.MINUTES), resultDelete.getArrivalTime().truncatedTo(ChronoUnit.MINUTES));
 
         Awaitility.await()
                 .atMost(10, TimeUnit.SECONDS)
