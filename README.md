@@ -130,7 +130,7 @@ where destiny_city_name IN (
 * `route-data-generator.no-of-itineraries-for-selected-root-city=4` how many itineraries we will generate for the random selected root city.
 
 
-#### Example Request
+#### Example Request - Response
 
 * POST at: localhost:8080/api/route-info/search
   with body:
