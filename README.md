@@ -74,6 +74,12 @@
 * See redis contents from here: `http://localhost:8081`
 
 
+#### Route Data Generator
+* On startup the service generates routes randomly based on provided csv (`src/main/resources/cities/worldcities.csv`)
+  The csv is provided from: `https://simplemaps.com/data/world-cities`, basic flavour.
+  So it is advisable to find root cities from the above queries, and provide these to [Itineraries Lookup Service](https://github.com/chriniko13/itineraries-lookup-service)
+
+
 #### How to find root(starting city) of itineraries for a specific country
 * Execute:
 
@@ -212,6 +218,44 @@ where destiny_city_name IN (
     }
   ```
 
+
+#### Additional Crud Operations
+* Search route by id: GET on localhost:8080/api/route-info/<route_id>
+
+* Delete route by id: DELETE on localhost:8080/api/route-info/<route_id>
+
+* Update route by id and payload: PUT on localhost:8080/api/route-info/<route_id>
+  Sample payload:
+  ```json
+        {
+            "city": {
+                "name": "updated field",
+                "country": "updated field"
+            },
+            "destinyCity": {
+                "name": "destiny 54",
+                "country": "destiny country 54"
+            }
+        }
+  ```
+  
+* Create new route: POST on localhost:8080/api/route-info/
+  With payload:
+  ```json
+      {
+          "city": {
+              "name": "origin",
+              "country": "origin country"
+          },
+          "destinyCity": {
+              "name": "destiny",
+              "country": "destiny country"
+          },
+          "departureTime": "2019-02-28T22:55:23Z",
+          "arrivalTime": "2019-03-01T00:55:23Z"
+      }
+
+  ```
 
 
 
