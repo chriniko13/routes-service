@@ -47,6 +47,10 @@
 * (Optional) When you finish: `docker-compose down`
 
 
+#### Create Docker Image
+* Execute: `docker build -t routes-service .` in order to build docker image.
+
+
 #### Execute Unit Tests
 * Execute: `mvn clean test`
 
