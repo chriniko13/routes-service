@@ -27,6 +27,7 @@
         <disruptor.version>3.3.6</disruptor.version>
         <commons-csv.version>1.4</commons-csv.version>
         <combinatoricslib.version>2.2</combinatoricslib.version>
+        <guava.version>27.1-jre</guava.version>
     </properties>
 
     <dependencies>
@@ -119,6 +120,14 @@
             <artifactId>commons-csv</artifactId>
             <version>${commons-csv.version}</version>
         </dependency>
+
+        <!-- https://mvnrepository.com/artifact/com.google.guava/guava -->
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>${guava.version}</version>
+        </dependency>
+
         <!-- END: Dev Dependencies -->
 
 

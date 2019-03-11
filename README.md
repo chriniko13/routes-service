@@ -137,7 +137,7 @@ where destiny_city_name IN (
   
   ```json
     {
-    	"name":"Guadalajara",
+    	"name":"Arrecife",
     	"country":"Spain"
     }
 
@@ -148,43 +148,56 @@ where destiny_city_name IN (
     {
         "results": [
             {
-                "id": "059534e9-fdbb-432f-ba0e-e500428192c9",
+                "id": "9737ba86-745d-466a-925a-b8312bc81aeb",
                 "city": {
-                    "name": "Guadalajara",
-                    "country": "Spain"
-                },
-                "destinyCity": {
-                    "name": "Madrid",
-                    "country": "Spain"
-                },
-                "departureTime": "2019-03-10T13:39:53Z",
-                "arrivalTime": "2019-03-10T15:39:53Z"
-            },
-            {
-                "id": "5b68748b-b767-420b-803d-51b31360ed1b",
-                "city": {
-                    "name": "Guadalajara",
-                    "country": "Spain"
-                },
-                "destinyCity": {
-                    "name": "Marbella",
-                    "country": "Spain"
-                },
-                "departureTime": "2019-03-10T13:39:53Z",
-                "arrivalTime": "2019-03-10T15:39:53Z"
-            },
-            {
-                "id": "b92e0f72-131e-4848-8d1c-67bd2c2c47ab",
-                "city": {
-                    "name": "Guadalajara",
+                    "name": "Arrecife",
                     "country": "Spain"
                 },
                 "destinyCity": {
                     "name": "Vitoria",
                     "country": "Spain"
                 },
-                "departureTime": "2019-03-10T13:39:53Z",
-                "arrivalTime": "2019-03-10T16:39:53Z"
+                "departureTime": "2019-03-11T00:15:52Z",
+                "arrivalTime": "2019-03-11T03:15:52Z"
+            },
+            {
+                "id": "c14e57a6-f662-4dd8-8e50-8009240735c3",
+                "city": {
+                    "name": "Arrecife",
+                    "country": "Spain"
+                },
+                "destinyCity": {
+                    "name": "La Coruna",
+                    "country": "Spain"
+                },
+                "departureTime": "2019-03-11T00:15:52Z",
+                "arrivalTime": "2019-03-11T03:15:52Z"
+            },
+            {
+                "id": "cc68d3d5-3d77-41cf-9a0b-ec0605b5f9ff",
+                "city": {
+                    "name": "Arrecife",
+                    "country": "Spain"
+                },
+                "destinyCity": {
+                    "name": "Malaga",
+                    "country": "Spain"
+                },
+                "departureTime": "2019-03-11T00:15:52Z",
+                "arrivalTime": "2019-03-11T02:15:52Z"
+            },
+            {
+                "id": "d355d14e-4f68-43a3-924f-7e6ac8d04305",
+                "city": {
+                    "name": "Arrecife",
+                    "country": "Spain"
+                },
+                "destinyCity": {
+                    "name": "Linares",
+                    "country": "Spain"
+                },
+                "departureTime": "2019-03-11T00:15:52Z",
+                "arrivalTime": "2019-03-11T02:15:52Z"
             }
         ]
     }

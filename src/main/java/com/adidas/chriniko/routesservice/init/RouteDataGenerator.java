@@ -1,6 +1,7 @@
 package com.adidas.chriniko.routesservice.init;
 
 import com.adidas.chriniko.routesservice.entity.RouteEntity;
+import com.google.common.collect.Lists;
 import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 import org.javatuples.Pair;
@@ -9,7 +10,10 @@ import org.springframework.stereotype.Component;
 
 import java.security.SecureRandom;
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -28,12 +32,12 @@ public class RouteDataGenerator {
     @Getter
     public static class RouteDataGeneratorResult {
         private Map<String, List<List<RouteEntity>>> itinerariesInfoByCountry = new LinkedHashMap<>();
-        private int countriesWithOnlyOneCity = 0;
+        private int countriesWhichNotSatisfyNoOfItinerariesForSelectedRootCity = 0;
     }
 
     public RouteDataGeneratorResult invoke(Map<String, List<String>> citiesByCountry) {
 
-        RouteDataGeneratorResult result = new RouteDataGeneratorResult();
+        final RouteDataGeneratorResult result = new RouteDataGeneratorResult();
 
         final SecureRandom random = new SecureRandom();
 
@@ -42,42 +46,46 @@ public class RouteDataGenerator {
             String country = citiesByCountryRecord.getKey();
             List<String> cities = citiesByCountryRecord.getValue();
 
-            // We need at least two in order to create a route (a,b) for itinerary size of 1.
-            if (cities.size() == 1) {
-                result.countriesWithOnlyOneCity++;
+            if (cities.size() <= noOfItinerariesForSelectedRootCity) {
+                result.countriesWhichNotSatisfyNoOfItinerariesForSelectedRootCity++;
                 continue;
             }
 
             // first pick a random root city
             final int rootCityIdx = random.nextInt(cities.size());
             final String rootCity = cities.get(rootCityIdx);
+            cities.remove(rootCity);
+
+            log.debug("noOfItinerariesForSelectedRootCity: {} --- cities.size(): {}", noOfItinerariesForSelectedRootCity, cities.size());
+            if (noOfItinerariesForSelectedRootCity > cities.size()) {
+                throw new IllegalStateException("not enough cities to apply the request number of itineraries for selected root city (partition could not be applied), "
+                        + "noOfItinerariesForSelectedRootCity="
+                        + noOfItinerariesForSelectedRootCity
+                        + ", cities.size()="
+                        + cities.size());
+            }
+
+            List<List<String>> partitionedCities = Lists.partition(cities, cities.size() / noOfItinerariesForSelectedRootCity);
 
             final List<List<RouteEntity>> itineraries = new ArrayList<>(noOfItinerariesForSelectedRootCity);
 
             for (int k = 1; k <= noOfItinerariesForSelectedRootCity; k++) {
 
+                List<String> citiesToChooseFrom = partitionedCities.get(k - 1);
+
                 // calculate size of itinerary, eg: a --> b --> c--> ... (size == 3)
-                int maxItinerarySize = cities.size() - 1; /* [city a, city b, city c] === [(a,b), (b,c)] === 2 records in db */
-                int itinerarySize = random.nextInt(maxItinerarySize) + 1;
+                int maxItinerarySize = citiesToChooseFrom.size(); /* [city a, city b, city c] === [(a,b), (b,c)] === 2 records in db */
+                int itinerarySize = random.nextInt(maxItinerarySize);
 
                 // calculate next city idx and do the 'binding'
-                Set<Integer> alreadyPickedIdxs = new LinkedHashSet<>();
-                alreadyPickedIdxs.add(rootCityIdx);
-
                 String previousCity = rootCity;
                 Instant previousArrivalTime = Instant.now();
 
                 List<RouteEntity> routes = new ArrayList<>(itinerarySize);
 
                 for (int i = 1; i <= itinerarySize; i++) {
-                    int nextCityIdx;
-                    do {
-                        nextCityIdx = random.nextInt(cities.size());
-                    } while (alreadyPickedIdxs.contains(nextCityIdx));
 
-                    alreadyPickedIdxs.add(nextCityIdx);
-
-                    String nextCity = cities.get(nextCityIdx);
+                    String nextCity = citiesToChooseFrom.get(i - 1);
 
                     Instant departureTime = previousArrivalTime;
                     Instant arrivalTime = departureTime.plusSeconds(TimeUnit.SECONDS.convert(random.nextInt(4) + 1, TimeUnit.HOURS));
@@ -100,9 +108,8 @@ public class RouteDataGenerator {
                 itineraries.add(routes);
 
                 log(country, routes);
-
-
             }
+
             result.itinerariesInfoByCountry.put(country, itineraries);
         }
 

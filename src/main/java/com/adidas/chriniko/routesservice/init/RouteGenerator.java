@@ -45,9 +45,9 @@ public class RouteGenerator {
         RouteDataGenerator.RouteDataGeneratorResult dataGeneratorResult = routeDataGenerator.invoke(citiesByCountry);
 
         Map<String, List<List<RouteEntity>>> itinerariesInfoByCountry = dataGeneratorResult.getItinerariesInfoByCountry();
-        int countriesWithOnlyOneCity = dataGeneratorResult.getCountriesWithOnlyOneCity();
+        int countriesWhichNotSatisfyNoOfItinerariesForSelectedRootCity = dataGeneratorResult.getCountriesWhichNotSatisfyNoOfItinerariesForSelectedRootCity();
 
-        saveData(itinerariesInfoByCountry, countriesWithOnlyOneCity);
+        saveData(itinerariesInfoByCountry, countriesWhichNotSatisfyNoOfItinerariesForSelectedRootCity);
     }
 
     private void displayDataSizeInfo(Map<String, List<String>> citiesByCountry) {
@@ -68,8 +68,8 @@ public class RouteGenerator {
                 totalCountries, averageCitiesPerCountry, maxCitiesPerCountry, minCitiesPerCountry, sumOfCities);
     }
 
-    private void saveData(Map<String, List<List<RouteEntity>>> itinerariesInfoByCountry, int countriesWithOnlyOneCity) {
-        log.debug("countries with only one city: {}", countriesWithOnlyOneCity);
+    private void saveData(Map<String, List<List<RouteEntity>>> itinerariesInfoByCountry, int countriesWhichNotSatisfyNoOfItinerariesForSelectedRootCity) {
+        log.debug("countries which not satisfy noOfItinerariesForSelectedRootCity: {}", countriesWhichNotSatisfyNoOfItinerariesForSelectedRootCity);
 
         int accurateNumberOfRecordsInDbAfterExecution = itinerariesInfoByCountry
                 .values()
