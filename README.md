@@ -61,6 +61,11 @@
     * In order to see integration test coverage open with browser: `target/site/jacoco-it/index.html`
 
 
+#### Designed to Scale
+* Have used Redis simple values (or Strings in Redis terminology) in order to 
+  cache results of find route operations (1. by CityInfo, 2. by routeId:String).
+
+
 #### Redis Commander (you should run docker-compose up first)
 * See redis contents from here: `http://localhost:8081`
 
