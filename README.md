@@ -77,7 +77,7 @@
 #### Route Data Generator
 * On startup the service generates routes randomly based on provided csv (`src/main/resources/cities/worldcities.csv`)
   The csv is provided from: `https://simplemaps.com/data/world-cities`, basic flavour.
-  So it is advisable to find root cities from the above queries, and provide these to [Itineraries Lookup Service](https://github.com/chriniko13/itineraries-lookup-service)
+  So it is advisable to find root cities from the below queries, and provide these to [Itineraries Lookup Service](https://github.com/chriniko13/itineraries-lookup-service)
 
 
 #### How to find root(starting city) of itineraries for a specific country
