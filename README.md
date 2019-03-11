@@ -26,7 +26,7 @@
 
 * Two options:
     * Execute: 
-        * `mvn clean install -DskipTests=true`
+        * `mvn clean install -DskipUTs=true -DskipITs`
         * `java -jar -Dspring.profiles.active=dev -DLog4jContextSelector=org.apache.logging.log4j.core.async.AsyncLoggerContextSelector target/routes-service-1.0.0-SNAPSHOT.jar`
                 
     * Execute:
@@ -38,7 +38,7 @@
 #### How to run service (dockerized)
 * Uncomment the section in `docker-compose.yml` file for service: `routes-service:`
 
-* Execute: `mvn clean install -DskipTests=true`
+* Execute: `mvn clean install -DskipUTs=true -DskipITs`
 
 * Execute: `docker-compose build`
 
@@ -48,8 +48,10 @@
 
 
 #### Create Docker Image
-* Execute: `docker build -t routes-service .` in order to build docker image.
+* Execute: `mvn clean install -DskipUTs=true -DskipITs`
+* Execute: `docker build -t chriniko/routes-service:1.0.0 .` in order to build docker image.
 
+* Fast: `mvn clean install -DskipUTs=true -DskipITs && docker build -t chriniko/routes-service:1.0.0 .`
 
 #### Execute Unit Tests
 * Execute: `mvn clean test`

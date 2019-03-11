@@ -5,14 +5,15 @@ import lombok.extern.log4j.Log4j2;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 
 import java.io.BufferedReader;
-import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.*;
+import java.io.InputStreamReader;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 @Log4j2
 
@@ -27,9 +28,10 @@ public class CitiesCsvProcessor {
     public Map<String, List<String>> getCitiesByCountry() {
 
         try {
-            URL resource = this.getClass().getClassLoader().getResource("cities/worldcities.csv");
-            Path path = Paths.get(Objects.requireNonNull(resource).toURI());
-            try (BufferedReader bufferedReader = Files.newBufferedReader(path)) {
+            try (BufferedReader bufferedReader = new BufferedReader(
+                    new InputStreamReader(
+                            new ClassPathResource("cities/worldcities.csv").getInputStream()
+                    ))) {
 
                 Iterable<CSVRecord> records = CSVFormat.DEFAULT
                         .withHeader(HEADERS)
