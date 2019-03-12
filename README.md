@@ -18,7 +18,7 @@
 
 
 #### Prequisities in order to local run
-1) Docker Compose
+* Need to have Docker Compose
 
 
 #### How to run service (not dockerized)
