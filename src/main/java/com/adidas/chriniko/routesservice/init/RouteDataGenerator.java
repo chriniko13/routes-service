@@ -56,7 +56,7 @@ public class RouteDataGenerator {
             final String rootCity = cities.get(rootCityIdx);
             cities.remove(rootCity);
 
-            log.debug("noOfItinerariesForSelectedRootCity: {} --- cities.size(): {}", noOfItinerariesForSelectedRootCity, cities.size());
+            log.trace("noOfItinerariesForSelectedRootCity: {} --- cities.size(): {}", noOfItinerariesForSelectedRootCity, cities.size());
             if (noOfItinerariesForSelectedRootCity > cities.size()) {
                 throw new IllegalStateException("not enough cities to apply the request number of itineraries for selected root city (partition could not be applied), "
                         + "noOfItinerariesForSelectedRootCity="
