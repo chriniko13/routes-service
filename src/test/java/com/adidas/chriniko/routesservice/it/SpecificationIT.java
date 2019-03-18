@@ -2,21 +2,26 @@ package com.adidas.chriniko.routesservice.it;
 
 
 import com.adidas.chriniko.routesservice.RoutesServiceApplication;
+import com.adidas.chriniko.routesservice.core.SecuritySupport;
 import com.adidas.chriniko.routesservice.dto.CityInfo;
 import com.adidas.chriniko.routesservice.dto.RouteInfo;
 import com.adidas.chriniko.routesservice.dto.RouteInfoResult;
 import com.adidas.chriniko.routesservice.repository.RouteRepository;
 import org.awaitility.Awaitility;
+import org.javatuples.Pair;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.web.server.LocalServerPort;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.reactive.function.BodyExtractors;
 import org.springframework.web.reactive.function.BodyInserters;
+import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.time.Instant;
@@ -51,9 +56,42 @@ public class SpecificationIT {
     @Autowired
     private RedisTemplate<String, RouteInfo> routeIdToRouteInfoCache;
 
+    @Value("${security.username}")
+    private String username;
+
+    @Value("${security.password}")
+    private String password;
+
+    private Pair<String, String> basicAuthHeader;
+
     @Before
     public void before() {
         webClient = WebClient.create("http://localhost:" + port + "/api/route-info");
+
+        basicAuthHeader = SecuritySupport.getBasicAuthHeader(username, password);
+    }
+
+    @Test
+    public void security_works_as_expected() {
+
+        // given
+        CityInfo originCityInfo = new CityInfo("origin city", "origin country");
+        CityInfo destinyCityInfo = new CityInfo("destiny city", "destiny country");
+
+        Instant departureTime = Instant.now();
+        long timeToArrive = TimeUnit.SECONDS.convert(2, TimeUnit.HOURS);
+        Instant arrivalTime = departureTime.plusSeconds(timeToArrive);
+
+        RouteInfo routeInfo = new RouteInfo(null, originCityInfo, destinyCityInfo, departureTime, arrivalTime);
+
+        // when
+        final ClientResponse clientResponse = webClient.post()
+                .body(BodyInserters.fromObject(routeInfo))
+                .exchange()
+                .block();
+
+        // then
+        assertEquals(HttpStatus.UNAUTHORIZED, clientResponse.statusCode());
     }
 
     @Test
@@ -72,6 +110,7 @@ public class SpecificationIT {
 
         // when - create a new route info
         final RouteInfo resultFromCreateNewRouteInfo = webClient.post()
+                .header(basicAuthHeader.getValue0(), basicAuthHeader.getValue1())
                 .body(BodyInserters.fromObject(routeInfo))
                 .exchange()
                 .block()
@@ -100,6 +139,7 @@ public class SpecificationIT {
         // when - find by city info
         final RouteInfoResult resultFindByCityInfoResult = webClient.post()
                 .uri("/search")
+                .header(basicAuthHeader.getValue0(), basicAuthHeader.getValue1())
                 .body(BodyInserters.fromObject(originCityInfo))
                 .exchange()
                 .block()
@@ -133,6 +173,7 @@ public class SpecificationIT {
 
         final RouteInfo resultFindByRouteId = webClient.get()
                 .uri("/" + routeId)
+                .header(basicAuthHeader.getValue0(), basicAuthHeader.getValue1())
                 .exchange()
                 .block()
                 .body(BodyExtractors.toMono(RouteInfo.class))
@@ -181,6 +222,7 @@ public class SpecificationIT {
 
         final RouteInfo resultUpdate = webClient.put()
                 .uri("/" + id)
+                .header(basicAuthHeader.getValue0(), basicAuthHeader.getValue1())
                 .body(BodyInserters.fromObject(resultFindByRouteId))
                 .exchange()
                 .block()
@@ -226,6 +268,7 @@ public class SpecificationIT {
         // when - delete a route info record by id
         final RouteInfo resultDelete = webClient.delete()
                 .uri("/" + resultUpdate.getId())
+                .header(basicAuthHeader.getValue0(), basicAuthHeader.getValue1())
                 .exchange()
                 .block()
                 .body(BodyExtractors.toMono(RouteInfo.class))
