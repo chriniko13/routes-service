@@ -147,6 +147,16 @@ where destiny_city_name IN (
 * `route-data-generator.no-of-itineraries-for-selected-root-city=4` how many itineraries we will generate for the random selected root city.
 
 
+#### Authentication Needed for HTTP operations
+* Header, Key: Authorization --- Value: Basic dXNlcjoxMjM0 --- (How value is constructed --> Base64.encode(username:password))
+
+* Current security settings:
+```
+security.username=user
+security.password=1234
+```
+
+
 #### Example Request - Response
 
 * POST at: localhost:8080/api/route-info/search
